@@ -5,7 +5,7 @@ if [ "$machineNAME" == "vesuvio" ]; then
     export mpiRUN='mpirun'
     echo "mpiRun set"
     module purge
-    module load openfoam/13
+    module load openfoam/14
     echo "openFOAM 13 module loaded"
 
     if [ -z "$WM_PROJECT_DIR" ]; then
@@ -31,9 +31,9 @@ elif [ "$machineNAME" == "lumi" ]; then
     module use /appl/local/csc/modulefiles
     #module load openfoam/12
     export EBU_USER_PREFIX=/project/project_465001878/EasyBuild
-    module load LUMI/24.03
+    module load LUMI/25.03
     module load partition/L
-    module load OpenFOAM/13-cpeGNU-24.03-master
+    module load OpenFOAM/14-cpeGNU-25.03-master
     
 else
         error "Unknow machine name, possible options: vesuvio, lumi"

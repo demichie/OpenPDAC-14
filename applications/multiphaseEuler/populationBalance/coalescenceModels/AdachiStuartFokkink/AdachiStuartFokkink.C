@@ -26,12 +26,13 @@ License
 #include "AdachiStuartFokkink.H"
 #include "phaseCompressibleMomentumTransportModel.H"
 #include "addToRunTimeSelectionTable.H"
+#include "volFieldsFwd.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -46,12 +47,10 @@ namespace coalescenceModels
 }
 }
 
-using Foam::constant::mathematical::pi;
-
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::AdachiStuartFokkink::
+Foam::populationBalance::coalescenceModels::AdachiStuartFokkink::
 AdachiStuartFokkink
 (
     const populationBalanceModel& popBal,
@@ -64,20 +63,18 @@ AdachiStuartFokkink
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::AdachiStuartFokkink::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::AdachiStuartFokkink::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-    const sizeGroup& fj = popBal_.sizeGroups()[j];
+    using Foam::constant::mathematical::pi;
 
-    tmp<volScalarField> tdi = fi.d();
+    tmp<volScalarField> tdi = popBal_.d(i);
     const volScalarField::Internal& di = tdi();
-    tmp<volScalarField> tdj = fj.d();
+    tmp<volScalarField> tdj = popBal_.d(j);
     const volScalarField::Internal& dj = tdj();
 
     tmp<volScalarField> tepsilonc(popBal_.continuousTurbulence().epsilon());
@@ -85,8 +82,7 @@ addToCoalescenceRate
     tmp<volScalarField> tnuc(popBal_.continuousPhase().fluidThermo().nu());
     const volScalarField::Internal nuc = tnuc();
 
-    coalescenceRate +=
-        (4.0/3.0)*sqrt(0.3*pi*epsilonc/nuc)*pow3(di + dj);
+    return (4.0/3.0)*sqrt(0.3*pi*epsilonc/nuc)*pow3(di + dj);
 }
 
 

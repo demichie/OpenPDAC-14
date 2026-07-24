@@ -25,12 +25,13 @@ License
 
 #include "exponential.H"
 #include "addToRunTimeSelectionTable.H"
+#include "volFieldsFwd.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
@@ -43,29 +44,30 @@ namespace breakupModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::breakupModels::exponential::exponential
+Foam::populationBalance::breakupModels::exponential::exponential
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 :
-    breakupModel(popBal, dict),
-    exponent_(dict.lookup<scalar>("exponent")),
-    C_(dict.lookup<scalar>("C"))
+    daughterSizeDistribution(popBal, dict),
+    exponent_("exponent", inv(dimVolume), dict),
+    C_("C", inv(dimTime), dict)
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::breakupModels::exponential::setBreakupRate
-(
-    volScalarField::Internal& breakupRate,
-    const label i
-)
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::breakupModels::exponential::rate(const label i) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-
-    breakupRate.primitiveFieldRef() = C_*exp(exponent_*fi.x().value());
+    return
+        volScalarField::Internal::New
+        (
+            "breakupRate",
+            popBal_.mesh(),
+            C_*exp(exponent_*popBal_.v(i))
+        );
 }
 
 

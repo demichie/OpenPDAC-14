@@ -31,7 +31,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -49,7 +49,7 @@ namespace coalescenceModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::CoulaloglouTavlarides::
+Foam::populationBalance::coalescenceModels::CoulaloglouTavlarides::
 CoulaloglouTavlarides
 (
     const populationBalanceModel& popBal,
@@ -64,20 +64,19 @@ CoulaloglouTavlarides
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::CoulaloglouTavlarides::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::CoulaloglouTavlarides::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-    const sizeGroup& fj = popBal_.sizeGroups()[j];
+    const dimensionedScalar& vi = popBal_.v(i);
+    const dimensionedScalar& vj = popBal_.v(j);
 
     const volScalarField::Internal& rhoc = popBal_.continuousPhase().rho();
 
-    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(fi.phase()));
+    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(i));
     const volScalarField::Internal& sigma = tsigma();
 
     tmp<volScalarField> tmuc(popBal_.continuousPhase().fluidThermo().mu());
@@ -85,16 +84,16 @@ addToCoalescenceRate
     tmp<volScalarField> tepsilonc(popBal_.continuousTurbulence().epsilon());
     const volScalarField::Internal& epsilonc = tepsilonc();
 
-    coalescenceRate +=
-        C1_*(pow(fi.x(), 2.0/3.0) + pow(fj.x(), 2.0/3.0))
-       *sqrt(pow(fi.x(), 2.0/9.0) + pow(fj.x(), 2.0/9.0))
+    return
+        C1_*(pow(vi, 2.0/3.0) + pow(vj, 2.0/3.0))
+       *sqrt(pow(vi, 2.0/9.0) + pow(vj, 2.0/9.0))
        *cbrt(epsilonc)
        /(1 + popBal_.alphas()())
        *exp
         (
           - C2_*muc*rhoc*epsilonc/sqr(sigma)
            /pow3(1 + popBal_.alphas()())
-           *pow4(cbrt(fi.x())*cbrt(fj.x())/(cbrt(fi.x()) + cbrt(fj.x())))
+           *pow4(cbrt(vi)*cbrt(vj)/(cbrt(vi) + cbrt(vj)))
         );
 }
 

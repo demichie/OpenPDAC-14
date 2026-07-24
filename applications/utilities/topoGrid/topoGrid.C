@@ -56,7 +56,7 @@ bool isProcessorFace(const Foam::polyMesh& mesh, const Foam::label faceI)
     }
 
     // If not internal, get its patch ID
-    const Foam::label patchID = mesh.boundaryMesh().whichPatch(faceI);
+    const Foam::label patchID = mesh.boundary().whichPatch(faceI);
 
     // Check if the ID is valid
     if (patchID == -1)
@@ -66,7 +66,7 @@ bool isProcessorFace(const Foam::polyMesh& mesh, const Foam::label faceI)
     }
 
     // Get the patch
-    const Foam::polyPatch& pp = mesh.boundaryMesh()[patchID];
+    const Foam::polyPatch& pp = mesh.boundary()[patchID];
 
     // Check if the patch is a processorPolyPatch
     return Foam::isA<Foam::processorPolyPatch>(pp);
@@ -1442,9 +1442,9 @@ int main(int argc, char* argv[])
         Info << "zMax = " << zMax << endl;
 
         label patchID = -1;
-        forAll(mesh.boundaryMesh(), patchi)
+        forAll(mesh.boundary(), patchi)
         {
-            if (mesh.boundaryMesh()[patchi].name() == "top")
+            if (mesh.boundary()[patchi].name() == "top")
             {
                 patchID = patchi;
                 break;
@@ -2371,10 +2371,10 @@ int main(int argc, char* argv[])
         boolList isBoundaryPoint(
             mesh.nPoints(),
             false); // Lista di flag per tutti i punti locali della mesh
-        forAll(mesh.boundaryMesh(),
+        forAll(mesh.boundary(),
                patchI) // Itera su TUTTI i patch di confine locali
         {
-            const polyPatch& pp = mesh.boundaryMesh()[patchI];
+            const polyPatch& pp = mesh.poly().boundary()[patchI];
 
             // --- NUOVA LOGICA: Filtra i patch per tipo ---
             // Un patch è "fisso" se NON è un processorPolyPatch.
@@ -2423,9 +2423,9 @@ int main(int argc, char* argv[])
             const faceList& faces = mesh.faces();
             const vectorField& faceAreas = mesh.faceAreas();
 
-            forAll(mesh.boundaryMesh(), patchI)
+            forAll(mesh.boundary(), patchI)
             {
-                const polyPatch& pp = mesh.boundaryMesh()[patchI];
+                const polyPatch& pp = mesh.poly().boundary()[patchI];
 
                 if (!isA<processorPolyPatch>(pp) && pp.type() == "wall")
                 {
@@ -3064,10 +3064,10 @@ int main(int argc, char* argv[])
                         else
                         {
                             const label patchID =
-                                mesh.boundaryMesh().whichPatch(worstFaceI);
+                                mesh.poly().boundary().whichPatch(worstFaceI);
                             Sout << "Face Type: physical boundary face on "
                                     "patch '"
-                                 << mesh.boundaryMesh()[patchID].name() << "'"
+                                 << mesh.boundary()[patchID].name() << "'"
                                  << endl;
                         }
                         Sout << "not internal face" << endl;

@@ -1,0 +1,158 @@
+SOURCE += phaseModel/phaseModel.C
+SOURCE += phaseModel/phaseModelNew.C
+SOURCE += phaseModels/phaseModels.C
+
+SOURCE += radialModel/radialModel/radialModel.C
+SOURCE += radialModel/radialModel/radialModelNew.C
+SOURCE += radialModel/SinclairJackson/SinclairJackson.C
+SOURCE += radialModel/Lebowitz/Lebowitz.C
+SOURCE += radialModel/CarnahanStarling/CarnahanStarling.C
+SOURCE += radialModel/MansooriBoublick/MansooriBoublick.C
+
+SOURCE += phaseInterface/phaseInterfaceKey/phaseInterfaceKey.C
+SOURCE += phaseInterface/phaseInterface/phaseInterface.C
+SOURCE += phaseInterface/dispersedPhaseInterface/dispersedPhaseInterface.C
+SOURCE += phaseInterface/segregatedPhaseInterface/segregatedPhaseInterface.C
+SOURCE += phaseInterface/displacedPhaseInterface/displacedPhaseInterface.C
+SOURCE += phaseInterface/dispersedDisplacedPhaseInterface/dispersedDisplacedPhaseInterface.C
+SOURCE += phaseInterface/segregatedDisplacedPhaseInterface/segregatedDisplacedPhaseInterface.C
+SOURCE += phaseInterface/sidedPhaseInterface/sidedPhaseInterface.C
+SOURCE += phaseInterface/dispersedSidedPhaseInterface/dispersedSidedPhaseInterface.C
+SOURCE += phaseInterface/segregatedSidedPhaseInterface/segregatedSidedPhaseInterface.C
+SOURCE += phaseInterface/displacedSidedPhaseInterface/displacedSidedPhaseInterface.C
+SOURCE += phaseInterface/dispersedDisplacedSidedPhaseInterface/dispersedDisplacedSidedPhaseInterface.C
+SOURCE += phaseInterface/segregatedDisplacedSidedPhaseInterface/segregatedDisplacedSidedPhaseInterface.C
+
+SOURCE += phaseSystem/phaseSystem.C
+SOURCE += phaseSystem/phaseSystemSolve.C
+
+SOURCE += diameterModels/diameterModel/diameterModel.C
+SOURCE += diameterModels/diameterModel/diameterModelNew.C
+SOURCE += diameterModels/sphericalDiameter/sphericalDiameter.C
+SOURCE += diameterModels/constantDiameter/constantDiameter.C
+SOURCE += diameterModels/isothermalDiameter/isothermalDiameter.C
+SOURCE += diameterModels/linearTsubDiameter/linearTsubDiameter.C
+SOURCE += diameterModels/noDiameter/noDiameter.C
+SOURCE += diameterModels/residualDiameter/residualDiameter.C
+SOURCE += diameterModels/fixedInterfacialAreaDiameter/fixedInterfacialAreaDiameter.C
+
+SOURCE += diameterModels/IATE/IATE.C
+SOURCE += diameterModels/IATE/IATEsources/IATEsource/IATEsource.C
+SOURCE += diameterModels/IATE/IATEsources/wakeEntrainmentCoalescence/IATEwakeEntrainmentCoalescence.C
+SOURCE += diameterModels/IATE/IATEsources/turbulentBreakUp/IATEturbulentBreakUp.C
+SOURCE += diameterModels/IATE/IATEsources/randomCoalescence/IATErandomCoalescence.C
+SOURCE += diameterModels/IATE/derivedFvFieldSources/interfacialGrowthInterfacialCurvature/interfacialGrowthInterfacialCurvatureFvScalarFieldSource.C
+
+SOURCE += surfaceTensionCoefficientModels/surfaceTensionCoefficientModel/surfaceTensionCoefficientModel.C
+SOURCE += surfaceTensionCoefficientModels/surfaceTensionCoefficientModel/surfaceTensionCoefficientModelNew.C
+SOURCE += surfaceTensionCoefficientModels/constantSurfaceTensionCoefficient/constantSurfaceTensionCoefficient.C
+
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/blendingMethod/blendingMethod.C
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/blendingMethod/blendingMethodNew.C
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/linear/linear.C
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/hyperbolic/hyperbolic.C
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/continuous/continuous.C
+SOURCE += interfacialModels/BlendedInterfacialModel/blendingMethods/segregatedBlendingMethod/segregatedBlendingMethod.C
+
+SOURCE += interfacialModels/dragModels/dragModel/dragModel.C
+SOURCE += interfacialModels/dragModels/dragModel/dragModelNew.C
+SOURCE += interfacialModels/dragModels/dispersedDragModel/dispersedDragModel.C
+SOURCE += interfacialModels/dragModels/segregated/segregated.C
+SOURCE += interfacialModels/dragModels/Ergun/Ergun.C
+SOURCE += interfacialModels/dragModels/GidaspowErgunWenYu/GidaspowErgunWenYu.C
+SOURCE += interfacialModels/dragModels/GidaspowSchillerNaumann/GidaspowSchillerNaumann.C
+SOURCE += interfacialModels/dragModels/SchillerNaumann/SchillerNaumann.C
+SOURCE += interfacialModels/dragModels/SyamlalOBrien/SyamlalOBrien.C
+SOURCE += interfacialModels/dragModels/WenYu/WenYu.C
+
+SOURCE += interfacialModels/dragModels/NonSphericalErgun/NonSphericalErgun.C
+SOURCE += interfacialModels/dragModels/NonSphericalWenYu/NonSphericalWenYu.C
+SOURCE += interfacialModels/dragModels/NonSphericalGidaspowErgunWenYu/NonSphericalGidaspowErgunWenYu.C
+SOURCE += interfacialModels/dragModels/solidSolidDrag/solidSolidDrag.C
+
+SOURCE += interfacialModels/dragModels/timeScaleFilteredDrag/timeScaleFilteredDrag.C
+
+SOURCE += interfacialModels/swarmCorrections/swarmCorrection/swarmCorrection.C
+SOURCE += interfacialModels/swarmCorrections/swarmCorrection/swarmCorrectionNew.C
+SOURCE += interfacialModels/swarmCorrections/noSwarm/noSwarm.C
+SOURCE += interfacialModels/swarmCorrections/TomiyamaSwarm/TomiyamaSwarm.C
+
+SOURCE += interfacialModels/liftModels/liftModel/liftModel.C
+SOURCE += interfacialModels/liftModels/liftModel/liftModelNew.C
+SOURCE += interfacialModels/liftModels/dispersedLiftModel/dispersedLiftModel.C
+SOURCE += interfacialModels/liftModels/noLift/noLift.C
+SOURCE += interfacialModels/liftModels/constantLiftCoefficient/constantLiftCoefficient.C
+SOURCE += interfacialModels/liftModels/Moraga/Moraga.C
+SOURCE += interfacialModels/liftModels/LegendreMagnaudet/LegendreMagnaudet.C
+SOURCE += interfacialModels/liftModels/SaffmanMei/SaffmanMei.C
+SOURCE += interfacialModels/liftModels/TomiyamaLift/TomiyamaLift.C
+SOURCE += interfacialModels/liftModels/wallDampedLift/wallDampedLift.C
+
+SOURCE += interfacialModels/virtualMassModels/virtualMassModel/virtualMassModel.C
+SOURCE += interfacialModels/virtualMassModels/virtualMassModel/virtualMassModelNew.C
+SOURCE += interfacialModels/virtualMassModels/dispersedVirtualMassModel/dispersedVirtualMassModel.C
+SOURCE += interfacialModels/virtualMassModels/noVirtualMass/noVirtualMass.C
+SOURCE += interfacialModels/virtualMassModels/constantVirtualMassCoefficient/constantVirtualMassCoefficient.C
+SOURCE += interfacialModels/virtualMassModels/Lamb/Lamb.C
+
+SOURCE += interfacialModels/wallLubricationModels/wallLubricationModel/wallLubricationModel.C
+SOURCE += interfacialModels/wallLubricationModels/wallLubricationModel/wallLubricationModelNew.C
+SOURCE += interfacialModels/wallLubricationModels/dispersedWallLubricationModel/dispersedWallLubricationModel.C
+SOURCE += interfacialModels/wallLubricationModels/noWallLubrication/noWallLubrication.C
+SOURCE += interfacialModels/wallLubricationModels/Antal/Antal.C
+SOURCE += interfacialModels/wallLubricationModels/Frank/Frank.C
+SOURCE += interfacialModels/wallLubricationModels/TomiyamaWallLubrication/TomiyamaWallLubrication.C
+
+SOURCE += interfacialModels/turbulentDispersionModels/turbulentDispersionModel/turbulentDispersionModel.C
+SOURCE += interfacialModels/turbulentDispersionModels/turbulentDispersionModel/turbulentDispersionModelNew.C
+SOURCE += interfacialModels/turbulentDispersionModels/dispersedTurbulentDispersionModel/dispersedTurbulentDispersionModel.C
+SOURCE += interfacialModels/turbulentDispersionModels/noTurbulentDispersion/noTurbulentDispersion.C
+SOURCE += interfacialModels/turbulentDispersionModels/constantTurbulentDispersionCoefficient/constantTurbulentDispersionCoefficient.C
+SOURCE += interfacialModels/turbulentDispersionModels/Burns/Burns.C
+SOURCE += interfacialModels/turbulentDispersionModels/Gosman/Gosman.C
+SOURCE += interfacialModels/turbulentDispersionModels/LopezDeBertodano/LopezDeBertodano.C
+
+SOURCE += interfacialModels/aspectRatioModels/aspectRatioModel/aspectRatioModel.C
+SOURCE += interfacialModels/aspectRatioModels/aspectRatioModel/aspectRatioModelNew.C
+SOURCE += interfacialModels/aspectRatioModels/constantAspectRatio/constantAspectRatio.C
+SOURCE += interfacialModels/aspectRatioModels/TomiyamaAspectRatio/TomiyamaAspectRatio.C
+SOURCE += interfacialModels/aspectRatioModels/VakhrushevEfremov/VakhrushevEfremov.C
+SOURCE += interfacialModels/aspectRatioModels/Wellek/Wellek.C
+
+SOURCE += interfacialModels/wallDependentModel/wallDependentModel.C
+
+SOURCE += interfacialModels/wallDampingModels/wallDampingModel/wallDampingModel.C
+SOURCE += interfacialModels/wallDampingModels/wallDampingModel/wallDampingModelNew.C
+SOURCE += interfacialModels/wallDampingModels/linear/linearWallDamping.C
+SOURCE += interfacialModels/wallDampingModels/cosine/cosineWallDamping.C
+SOURCE += interfacialModels/wallDampingModels/sine/sineWallDamping.C
+
+SOURCE += interfacialModels/heatTransferModels/heatTransferModel/heatTransferModel.C
+SOURCE += interfacialModels/heatTransferModels/heatTransferModel/heatTransferModelNew.C
+SOURCE += interfacialModels/heatTransferModels/constantNu/constantNuHeatTransfer.C
+SOURCE += interfacialModels/heatTransferModels/RanzMarshall/RanzMarshall.C
+SOURCE += interfacialModels/heatTransferModels/Gunn/Gunn.C
+SOURCE += interfacialModels/heatTransferModels/sphericalHeatTransfer/sphericalHeatTransfer.C
+SOURCE += interfacialModels/heatTransferModels/nonSphericalHeatTransfer/nonSphericalHeatTransfer.C
+SOURCE += interfacialModels/heatTransferModels/timeScaleFilteredHeatTransfer/timeScaleFilteredHeatTransfer.C
+SOURCE += interfacialModels/heatTransferModels/Prandtl/Prandtl.C
+
+SOURCE += interfacialModels/diffusiveMassTransferModels/diffusiveMassTransferModel/diffusiveMassTransferModel.C
+SOURCE += interfacialModels/diffusiveMassTransferModels/diffusiveMassTransferModel/diffusiveMassTransferModelNew.C
+SOURCE += interfacialModels/diffusiveMassTransferModels/Frossling/Frossling.C
+SOURCE += interfacialModels/diffusiveMassTransferModels/sphericalDiffusiveMassTransfer/sphericalDiffusiveMassTransfer.C
+
+SOURCE += interfacialModels/interfaceCompositionModels/interfaceCompositionModel/interfaceCompositionModel.C
+SOURCE += interfacialModels/interfaceCompositionModels/interfaceCompositionModel/interfaceCompositionModelNew.C
+SOURCE += interfacialModels/interfaceCompositionModels/Henry/Henry.C
+SOURCE += interfacialModels/interfaceCompositionModels/nonRandomTwoLiquid/nonRandomTwoLiquid.C
+SOURCE += interfacialModels/interfaceCompositionModels/Raoult/Raoult.C
+SOURCE += interfacialModels/interfaceCompositionModels/saturated/saturated.C
+
+SOURCE += momentumTransferSystem/momentumTransferSystem.C
+SOURCE += heatTransferSystem/heatTransferSystem.C
+
+SOURCE += oneResistanceHeatTransfer/oneResistanceHeatTransfer.C
+SOURCE += twoResistanceHeatTransfer/twoResistanceHeatTransfer.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACphaseSystem

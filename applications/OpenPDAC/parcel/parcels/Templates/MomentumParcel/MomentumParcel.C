@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2022 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -377,7 +377,7 @@ void Foam::MomentumParcel<ParcelType>::correctAfterParallelTransfer
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[td.sendToPatch];
+    const polyPatch& pp = td.mesh.boundary()[td.sendToPatch];
 
     cloud.functions().postPatch(p, pp);
 }
@@ -394,7 +394,7 @@ bool Foam::MomentumParcel<ParcelType>::hitPatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     // Allow a surface film model to consume the parcel
     if (cloud.surfaceFilm().transferParcel(p, pp, td.keepParticle))
@@ -427,7 +427,7 @@ void Foam::MomentumParcel<ParcelType>::hitWedgePatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     cloud.functions().postPatch(p, pp);
 }
@@ -446,7 +446,7 @@ void Foam::MomentumParcel<ParcelType>::hitSymmetryPlanePatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     cloud.functions().postPatch(p, pp);
 }
@@ -465,7 +465,7 @@ void Foam::MomentumParcel<ParcelType>::hitSymmetryPatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     cloud.functions().postPatch(p, pp);
 }
@@ -484,7 +484,7 @@ void Foam::MomentumParcel<ParcelType>::hitCyclicPatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     cloud.functions().postPatch(p, pp);
 }
@@ -516,7 +516,7 @@ bool Foam::MomentumParcel<ParcelType>::hitNonConformalCyclicPatch
         typename TrackCloudType::parcelType& p =
             static_cast<typename TrackCloudType::parcelType&>(*this);
 
-        const polyPatch& pp = td.mesh.boundaryMesh()[patchi];
+        const polyPatch& pp = td.mesh.boundary()[patchi];
 
         cloud.functions().postPatch(p, pp);
     }
@@ -533,7 +533,7 @@ void Foam::MomentumParcel<ParcelType>::hitWallPatch
     trackingData& td
 )
 {
-    const polyPatch& pp = td.mesh.boundaryMesh()[this->patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[this->patch(td.mesh)];
 
     FatalErrorInFunction
         << "Particle " << this->origId() << " hit " << pp.type() << " patch "
@@ -556,7 +556,7 @@ void Foam::MomentumParcel<ParcelType>::hitBasicPatch
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
-    const polyPatch& pp = td.mesh.boundaryMesh()[p.patch(td.mesh)];
+    const polyPatch& pp = td.mesh.boundary()[p.patch(td.mesh)];
 
     cloud.functions().postPatch(p, pp);
 }

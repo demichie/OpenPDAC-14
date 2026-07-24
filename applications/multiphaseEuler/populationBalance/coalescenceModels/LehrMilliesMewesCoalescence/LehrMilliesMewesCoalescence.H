@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::coalescenceModels::LehrMilliesMewesCoalescence
+    Foam::populationBalance::coalescenceModels::LehrMilliesMewesCoalescence
 
 Description
     Model of Lehr et al. (2002). The coalescence rate is calculated by
@@ -49,7 +49,7 @@ Description
 
     is the characteristic velocity for coalescence. Note that a velocity
     difference between bubble i and j is only present if the corresponding
-    size groups are assigned to different velocity groups.
+    groups are assigned to different phases.
 
     \vartable
         d_i          |  Diameter of bubble i [m]
@@ -90,7 +90,7 @@ SourceFiles
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -133,20 +133,19 @@ public:
 
     // Member Functions
 
-        //- Add to coalescenceRate
-        virtual void addToCoalescenceRate
+        //- Return the coalescence rate between two groups
+        virtual tmp<volScalarField::Internal> rate
         (
-            volScalarField::Internal& coalescenceRate,
             const label i,
             const label j
-        );
+        ) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace coalescenceModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

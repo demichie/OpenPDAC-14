@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -33,34 +33,40 @@ Foam::autoPtr<Foam::diameterModel> Foam::diameterModel::New
     const phaseModel& phase
 )
 {
-    word diameterModelType
-    (
-        dict.lookup("diameterModel")
-    );
+    const bool haveModelDict = dict.isDict(typeName);
 
-    Info << "Selecting diameterModel for phase "
-        << phase.name()
-        << ": "
-        << diameterModelType << endl;
+    word modelType;
+    const dictionary* modelDictPtr = nullptr;
+    if (haveModelDict)
+    {
+        modelDictPtr = &dict.subDict(typeName);
+        modelType = modelDictPtr->lookup<word>("type");
+    }
+    else
+    {
+        modelType = dict.lookup<word>(typeName);
+        modelDictPtr = &dict.optionalTypeDict(modelType);
+    }
+    const dictionary& modelDict = *modelDictPtr;
+
+    Info<< indentOrNl << "Selecting " << typeName << ' ' << modelType << endl;
 
     dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(diameterModelType);
+        dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
         FatalIOErrorInFunction(dict)
-           << "Unknown diameterModel type "
-           << diameterModelType << endl << endl
-           << "Valid diameterModel types are : " << endl
+           << "Unknown " << typeName << " type "
+           << modelType << endl << endl
+           << "Valid " << typeName << " types are : " << endl
            << dictionaryConstructorTablePtr_->sortedToc()
            << exit(FatalIOError);
     }
 
-    return cstrIter()
-    (
-        dict.optionalSubDict(diameterModelType + "Coeffs"),
-        phase
-    );
+    printDictionary print(modelDict);
+
+    return cstrIter()(modelDict, phase);
 }
 
 

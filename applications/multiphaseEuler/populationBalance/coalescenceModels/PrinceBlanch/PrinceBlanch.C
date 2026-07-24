@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2018-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2018-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -33,7 +33,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -48,13 +48,10 @@ namespace coalescenceModels
 }
 }
 
-using Foam::constant::mathematical::pi;
-
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::PrinceBlanch::
-PrinceBlanch
+Foam::populationBalance::coalescenceModels::PrinceBlanch::PrinceBlanch
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
@@ -84,7 +81,7 @@ PrinceBlanch
                 dimensionedScalar
                 (
                     "shearStrainRate",
-                    dimVelocity/dimLength,
+                    dimensions::rate,
                     Zero
                 )
             )
@@ -95,7 +92,7 @@ PrinceBlanch
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::PrinceBlanch::precompute()
+void Foam::populationBalance::coalescenceModels::PrinceBlanch::precompute()
 {
     if (laminarShear_)
     {
@@ -105,20 +102,21 @@ void Foam::diameterModels::coalescenceModels::PrinceBlanch::precompute()
 }
 
 
-void Foam::diameterModels::coalescenceModels::PrinceBlanch::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::PrinceBlanch::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-    const sizeGroup& fj = popBal_.sizeGroups()[j];
+    using Foam::constant::mathematical::pi;
+
+    const dimensionedScalar& dSphi = popBal_.dSph(i);
+    const dimensionedScalar& dSphj = popBal_.dSph(j);
 
     const volScalarField::Internal& rhoc = popBal_.continuousPhase().rho();
 
-    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(fi.phase()));
+    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(i));
     const volScalarField::Internal& sigma = tsigma();
 
     tmp<volScalarField> tepsilonc(popBal_.continuousTurbulence().epsilon());
@@ -127,7 +125,7 @@ addToCoalescenceRate
     const uniformDimensionedVectorField& g =
         popBal_.mesh().lookupObject<uniformDimensionedVectorField>("g");
 
-    const dimensionedScalar rij(1/(1/fi.dSph() + 1/fj.dSph()));
+    const dimensionedScalar rij(1/(1/dSphi + 1/dSphj));
 
     const volScalarField::Internal collisionEfficiency
     (
@@ -140,29 +138,38 @@ addToCoalescenceRate
         )
     );
 
+    tmp<volScalarField::Internal> tcoalescenceRate =
+        volScalarField::Internal::New
+        (
+            "coalescenceRate",
+            popBal_.mesh(),
+            dimensionedScalar(dimensions::volume/dimensions::time, scalar(0))
+        );
+    volScalarField::Internal& coalescenceRate = tcoalescenceRate.ref();
+
     if (turbulence_)
     {
         coalescenceRate +=
             (
                 C1_
                *pi
-               *sqr(fi.dSph() + fj.dSph())
+               *sqr(dSphi + dSphj)
                *cbrt(epsilonc)
-               *sqrt(pow(fi.dSph(), 2.0/3.0) + pow(fj.dSph(), 2.0/3.0))
+               *sqrt(pow(dSphi, 2.0/3.0) + pow(dSphj, 2.0/3.0))
             )
            *collisionEfficiency;
     }
 
     if (buoyancy_)
     {
-        const dimensionedScalar Sij(pi/4*sqr(fi.dSph() + fj.dSph()));
+        const dimensionedScalar Sij(pi/4*sqr(dSphi + dSphj));
 
         coalescenceRate +=
             Sij
            *mag
             (
-                sqrt(2.14*sigma/(rhoc*fi.dSph()) + 0.505*mag(g)*fi.dSph())
-              - sqrt(2.14*sigma/(rhoc*fj.dSph()) + 0.505*mag(g)*fj.dSph())
+                sqrt(2.14*sigma/(rhoc*dSphi) + 0.505*mag(g)*dSphi)
+              - sqrt(2.14*sigma/(rhoc*dSphj) + 0.505*mag(g)*dSphj)
             )
            *collisionEfficiency;
     }
@@ -170,9 +177,11 @@ addToCoalescenceRate
     if (laminarShear_)
     {
         coalescenceRate +=
-            pow3(fi.dSph() + fj.dSph())/6
+            pow3(dSphi + dSphj)/6
            *shearStrainRate_()*collisionEfficiency;
     }
+
+    return tcoalescenceRate;
 }
 
 

@@ -32,7 +32,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -50,7 +50,7 @@ namespace coalescenceModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::DahnekeInterpolation::
+Foam::populationBalance::coalescenceModels::DahnekeInterpolation::
 DahnekeInterpolation
 (
     const populationBalanceModel& popBal,
@@ -59,57 +59,33 @@ DahnekeInterpolation
 :
     coalescenceModel(popBal, dict),
     Brownian_(new BrownianCollisions(popBal, dict)),
-    BrownianRate_
-    (
-        IOobject
-        (
-            "BrownianCollisionRate",
-            popBal_.mesh().time().name(),
-            popBal_.mesh()
-        ),
-        popBal_.mesh(),
-        dimensionedScalar("BrownianCollisionRate", dimVolume/dimTime, Zero)
-    ),
-    ballistic_(new ballisticCollisions(popBal, dict)),
-    ballisticRate_
-    (
-        IOobject
-        (
-            "ballisticCollisionRate",
-            popBal_.mesh().time().name(),
-            popBal_.mesh()
-        ),
-        popBal_.mesh(),
-        dimensionedScalar("ballisticCollisionRate", dimVolume/dimTime, Zero)
-    )
+    ballistic_(new ballisticCollisions(popBal, dict))
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::DahnekeInterpolation::precompute()
+void
+Foam::populationBalance::coalescenceModels::DahnekeInterpolation::precompute()
 {
     Brownian_().precompute();
+    ballistic_().precompute();
 }
 
 
-void Foam::diameterModels::coalescenceModels::DahnekeInterpolation::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::DahnekeInterpolation::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    BrownianRate_ = Zero;
-    ballisticRate_ = Zero;
+    tmp<volScalarField::Internal> tBrownianRate = Brownian_().rate(i, j);
+    tmp<volScalarField::Internal> tballisticRate = ballistic_().rate(i, j);
 
-    Brownian_().addToCoalescenceRate(BrownianRate_, i, j);
-    ballistic_().addToCoalescenceRate(ballisticRate_, i, j);
+    const volScalarField::Internal KnD(tBrownianRate()/(2*tballisticRate));
 
-    const volScalarField::Internal KnD(BrownianRate_/(2*ballisticRate_));
-
-    coalescenceRate += BrownianRate_*(1 + KnD)/(1 + 2*KnD + 2*sqr(KnD));
+    return tBrownianRate*(1 + KnD)/(1 + 2*KnD + 2*sqr(KnD));
 }
 
 

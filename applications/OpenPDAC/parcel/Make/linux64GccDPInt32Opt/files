@@ -1,0 +1,123 @@
+PARCELS=parcels
+BASEPARCELS=$(PARCELS)/baseClasses
+DERIVEDPARCELS=$(PARCELS)/derived
+
+CLOUDS=clouds
+BASECLOUDS=$(CLOUDS)/baseClasses
+DERIVEDCLOUDS=$(CLOUDS)/derived
+
+# Thermo
+SOURCE += parcelThermo/parcelThermo.C
+
+# parcel cloud
+SOURCE += parcelCloud/parcelCloudBase.C
+SOURCE += parcelCloud/parcelCloud.C
+SOURCE += parcelCloud/parcelCloudNew.C
+SOURCE += parcelCloud/parcelCloudList.C
+SOURCE += parcelCloud/parcelClouds.C
+
+# cloud names
+SOURCE += $(CLOUDS)/Templates/MomentumCloud/MomentumCloudName.C
+SOURCE += $(CLOUDS)/Templates/CollidingCloud/CollidingCloudName.C
+SOURCE += $(CLOUDS)/Templates/MPPICCloud/MPPICCloudName.C
+SOURCE += $(CLOUDS)/Templates/ThermoCloud/ThermoCloudName.C
+SOURCE += $(CLOUDS)/Templates/ReactingCloud/ReactingCloudName.C
+SOURCE += $(CLOUDS)/Templates/ReactingMultiphaseCloud/ReactingMultiphaseCloudName.C
+SOURCE += $(CLOUDS)/Templates/SprayCloud/SprayCloudName.C
+
+# clouds
+SOURCE += $(DERIVEDCLOUDS)/momentumCloud/momentumCloud.C
+SOURCE += $(DERIVEDCLOUDS)/collidingCloud/collidingCloud.C
+SOURCE += $(DERIVEDCLOUDS)/mppicCloud/mppicCloud.C
+SOURCE += $(DERIVEDCLOUDS)/thermoCloud/thermoCloud.C
+SOURCE += $(DERIVEDCLOUDS)/reactingCloud/reactingCloud.C
+SOURCE += $(DERIVEDCLOUDS)/reactingMultiphaseCloud/reactingMultiphaseCloud.C
+SOURCE += $(DERIVEDCLOUDS)/sprayCloud/sprayCloud.C
+
+# parcel names
+SOURCE += $(PARCELS)/Templates/MomentumParcel/MomentumParcelName.C
+SOURCE += $(PARCELS)/Templates/CollidingParcel/CollidingParcelName.C
+SOURCE += $(PARCELS)/Templates/MPPICParcel/MPPICParcelName.C
+SOURCE += $(PARCELS)/Templates/ReactingMultiphaseParcel/ReactingMultiphaseParcelName.C
+SOURCE += $(PARCELS)/Templates/ReactingParcel/ReactingParcelName.C
+SOURCE += $(PARCELS)/Templates/SprayParcel/SprayParcelName.C
+SOURCE += $(PARCELS)/Templates/ThermoParcel/ThermoParcelName.C
+
+# sub-models
+SOURCE += submodels/subModelBase/subModelBase.C
+SOURCE += $(DERIVEDPARCELS)/momentumParcel/makeMomentumParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/collidingParcel/makeCollidingParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/mppicParcel/makeMppicParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/thermoParcel/makeThermoParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/reactingParcel/makeReactingParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/reactingMultiphaseParcel/makeReactingMultiphaseParcelSubmodels.C
+SOURCE += $(DERIVEDPARCELS)/sprayParcel/makeSprayParcelSubmodels.C
+
+# bolt-on models
+RADIATION=submodels/addOns/radiation
+SOURCE += $(RADIATION)/absorptionEmission/cloudAbsorptionEmission/cloudAbsorptionEmission.C
+SOURCE += $(RADIATION)/scatter/cloudScatter/cloudScatter.C
+
+MOMENTUMINJECTION=submodels/Momentum/InjectionModel
+SOURCE += $(MOMENTUMINJECTION)/MomentumLookupTableInjection/momentumParcelInjectionData.C
+SOURCE += $(MOMENTUMINJECTION)/MomentumLookupTableInjection/momentumParcelInjectionDataIO.C
+SOURCE += $(MOMENTUMINJECTION)/MomentumLookupTableInjection/momentumParcelInjectionDataIOList.C
+SOURCE += $(MOMENTUMINJECTION)/PatchInjection/patchInjectionBase.C
+
+THERMOINJECTION=submodels/Thermodynamic/InjectionModel
+SOURCE += $(THERMOINJECTION)/ThermoLookupTableInjection/thermoParcelInjectionData.C
+SOURCE += $(THERMOINJECTION)/ThermoLookupTableInjection/thermoParcelInjectionDataIO.C
+SOURCE += $(THERMOINJECTION)/ThermoLookupTableInjection/thermoParcelInjectionDataIOList.C
+
+REACTINGINJECTION=submodels/Reacting/InjectionModel
+SOURCE += $(REACTINGINJECTION)/ReactingLookupTableInjection/reactingParcelInjectionData.C
+SOURCE += $(REACTINGINJECTION)/ReactingLookupTableInjection/reactingParcelInjectionDataIO.C
+SOURCE += $(REACTINGINJECTION)/ReactingLookupTableInjection/reactingParcelInjectionDataIOList.C
+
+REACTINGMPINJECTION=submodels/ReactingMultiphase/InjectionModel
+SOURCE += $(REACTINGMPINJECTION)/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionData.C
+SOURCE += $(REACTINGMPINJECTION)/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionDataIO.C
+SOURCE += $(REACTINGMPINJECTION)/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionDataIOList.C
+
+MPPICPARTICLESTRESS=submodels/MPPIC/ParticleStressModels
+SOURCE += $(MPPICPARTICLESTRESS)/ParticleStressModel/ParticleStressModel.C
+SOURCE += $(MPPICPARTICLESTRESS)/HarrisCrighton/HarrisCrighton.C
+SOURCE += $(MPPICPARTICLESTRESS)/Lun/Lun.C
+SOURCE += $(MPPICPARTICLESTRESS)/exponential/exponential.C
+
+MPPICCORRECTIONLIMITING=submodels/MPPIC/CorrectionLimitingMethods
+SOURCE += $(MPPICCORRECTIONLIMITING)/CorrectionLimitingMethod/CorrectionLimitingMethod.C
+SOURCE += $(MPPICCORRECTIONLIMITING)/noCorrectionLimiting/noCorrectionLimiting.C
+SOURCE += $(MPPICCORRECTIONLIMITING)/absolute/absolute.C
+SOURCE += $(MPPICCORRECTIONLIMITING)/relative/relative.C
+
+MPPICTIMESCALE=submodels/MPPIC/TimeScaleModels
+SOURCE += $(MPPICTIMESCALE)/TimeScaleModel/TimeScaleModel.C
+SOURCE += $(MPPICTIMESCALE)/equilibrium/equilibrium.C
+SOURCE += $(MPPICTIMESCALE)/nonEquilibrium/nonEquilibrium.C
+SOURCE += $(MPPICTIMESCALE)/isotropic/isotropic.C
+
+# injection model
+SOURCE += submodels/Momentum/InjectionModel/InjectionModel/injectionModel.C
+
+# integration schemes
+SOURCE += integrationScheme/integrationScheme/integrationScheme.C
+SOURCE += integrationScheme/integrationScheme/integrationSchemeNew.C
+SOURCE += integrationScheme/Euler/Euler.C
+SOURCE += integrationScheme/analytical/analytical.C
+
+# phase properties
+SOURCE += phaseProperties/phaseProperties/phaseProperties.C
+SOURCE += phaseProperties/phaseProperties/phasePropertiesIO.C
+SOURCE += phaseProperties/phasePropertiesList/phasePropertiesList.C
+
+# additional helper classes
+SOURCE += clouds/Templates/MomentumCloud/cloudSolution/cloudSolution.C
+
+# averaging methods
+SOURCE += submodels/MPPIC/AveragingMethods/makeAveragingMethods.C
+
+# fvModels
+SOURCE += fvModels/clouds/clouds.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDAClagrangianParcel

@@ -58,19 +58,32 @@ Foam::ThermalPhaseModel<BasePhaseModel>::filterPressureWork(
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class BasePhaseModel>
-Foam::ThermalPhaseModel<BasePhaseModel>::ThermalPhaseModel(
+Foam::ThermalPhaseModel<BasePhaseModel>::ThermalPhaseModel
+(
     const phaseSystem& fluid,
     const word& phaseName,
     const bool referencePhase,
-    const label index)
-: ThermophysicalTransportPhaseModel<BasePhaseModel>(
-      fluid, phaseName, referencePhase, index),
-  g_(fluid.mesh().lookupObject<uniformDimensionedVectorField>("g")),
-  totalEnergy(
-      fluid.mesh().solution().dict().subDict("PIMPLE").lookupOrDefault<Switch>(
-          "totalEnergy", false))
-{
-}
+    const label index
+)
+:
+    ThermophysicalTransportPhaseModel<BasePhaseModel>
+    (
+        fluid,
+        phaseName,
+        referencePhase,
+        index
+    ),
+    g_
+    (
+        fluid.mesh().lookupObject<uniformDimensionedVectorField>("g")
+    ),
+    totalEnergy
+    (
+        fluid.mesh().solution()
+            .subDict("PIMPLE")
+            .lookupOrDefault<Switch>("totalEnergy", false)
+    )
+{}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

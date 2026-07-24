@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2025-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -26,7 +26,7 @@ Class
 
 Description
     Base class for source conditions which create a growth source terms in the
-    size group equations or related secondary property equations of a
+    group fraction equations or related secondary property equations of a
     population balance.
 
 SourceFiles
@@ -63,15 +63,15 @@ public:
     // Member Functions
 
         //- Return the source value. Not Implemented.
-        virtual tmp<DimensionedField<scalar, volMesh>> sourceValue
+        virtual tmp<DimensionedField<scalar, fvMesh>> sourceValue
         (
             const fvSource& model,
-            const DimensionedField<scalar, volMesh>& source
+            const DimensionedField<scalar, fvMesh>& source
         ) const;
 
         //- Return the source coefficients for exchange with the groups below
         //  and above this group
-        virtual Pair<tmp<DimensionedField<scalar, volMesh>>> sourceCoeffs
+        virtual Pair<tmp<DimensionedField<scalar, fvMesh>>> sourceCoeffs
         (
             const fvSource& model
         ) const = 0;

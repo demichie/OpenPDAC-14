@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -50,7 +50,7 @@ namespace kineticTheoryModels
 
 class conductivityModel
 {
-    // Private member functions
+    // Private Member Functions
 
     //- Read the coefficients from coeffDict
     virtual bool readCoeffs(const dictionary& coeffDict) { return true; }
@@ -88,8 +88,7 @@ public:
 
     // Member Functions
 
-    //- Read the coefficients from the optional ".*Coeffs" sub-dictionary
-    //  of the given dictionary
+    //- Read the coefficients from the optional model sub-dictionary
     bool read(const dictionary& dict);
 
     virtual tmp<volScalarField> kappa(const volScalarField& alpha1,

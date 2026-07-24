@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::breakupModels::Kusters
+    Foam::populationBalance::breakupModels::Kusters
 
 Description
     Solid particle breakage model of Kusters (1991). The breakage rate is
@@ -75,13 +75,13 @@ SourceFiles
 #ifndef Kusters_H
 #define Kusters_H
 
-#include "breakupModel.H"
+#include "daughterSizeDistribution.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
@@ -92,7 +92,7 @@ namespace breakupModels
 
 class Kusters
 :
-    public breakupModel
+    public daughterSizeDistribution
 {
     // Private Data
 
@@ -130,19 +130,15 @@ public:
 
     // Member Functions
 
-        //- Set total breakupRate
-        virtual void setBreakupRate
-        (
-            volScalarField::Internal& breakupRate,
-            const label i
-        );
+        //- Return the breakup rate for a group
+        virtual tmp<volScalarField::Internal> rate(const label i) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace breakupModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

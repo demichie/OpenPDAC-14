@@ -22,10 +22,10 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::breakupModels::powerLaw
+    Foam::populationBalance::breakupModels::powerLaw
 
 Description
-    Powerlaw kernel.
+    Power-law breakup model
 
 SourceFiles
     powerLaw.C
@@ -35,13 +35,13 @@ SourceFiles
 #ifndef powerLaw_H
 #define powerLaw_H
 
-#include "breakupModel.H"
+#include "daughterSizeDistribution.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
@@ -52,7 +52,7 @@ namespace breakupModels
 
 class powerLaw
 :
-    public breakupModel
+    public daughterSizeDistribution
 {
     // Private Data
 
@@ -82,19 +82,15 @@ public:
 
     // Member Functions
 
-        //- Set total breakupRate
-        virtual void setBreakupRate
-        (
-            volScalarField::Internal& breakupRate,
-            const label i
-        );
+        //- Return the breakup rate for a group
+        virtual tmp<volScalarField::Internal> rate(const label i) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace breakupModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

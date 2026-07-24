@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2015-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2015-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -46,7 +46,7 @@ SourceFiles
 
 #include "pimpleNoLoopControl.H"
 
-#include "IOMRFZoneList.H"
+#include "MRFZones.H"
 #include "fvModels.H"
 #include "fvConstraints.H"
 
@@ -106,7 +106,7 @@ public:
 
             //- Optionally clip the phase-fractions
             //  between their physical limits and to sum to 1.
-            //  Defaults to false
+            //  Defaults to true
             Switch clip;
 
             //- Read the alpha and MULES controls from dict
@@ -159,8 +159,8 @@ protected:
         //- Reference to pimpleNoLoopControl
         const pimpleNoLoopControl& pimple_;
 
-        //- Optional MRF zones
-        IOMRFZoneList MRF_;
+        //- Reference to the MRFZones MeshObject
+        const MRFZones& MRF_;
 
         //- Name of optional reference phase which is not solved for
         // but obtained from the sum of the other phases
@@ -188,13 +188,13 @@ protected:
         volScalarField dpdt_;
 
         //- Interface compression coefficients
-        const cAlphaTable cAlphas_;
+        cAlphaTable cAlphas_;
 
         //- Stabilisation for normalisation of the interface normal
-        const dimensionedScalar deltaN_;
+        dimensionedScalar deltaN_;
 
         //- Surface tension models
-        const surfaceTensionCoefficientModelTable
+        surfaceTensionCoefficientModelTable
             surfaceTensionCoefficientModels_;
 
 
@@ -320,7 +320,7 @@ public:
             inline volScalarField& dpdt();
 
             //- Return MRF zones
-            inline const IOMRFZoneList& MRF() const;
+            inline const MRFZones& MRF() const;
 
             //- Access the fvModels
             inline Foam::fvModels& fvModels(fvMesh& mesh);

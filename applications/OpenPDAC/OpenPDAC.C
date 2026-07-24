@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2022-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -53,7 +53,7 @@ addToRunTimeSelectionTable(solver, OpenPDAC, fvMesh);
 
 bool Foam::solvers::OpenPDAC::read()
 {
-    fluidSolver::read();
+    basicFluidSolver::read();
 
     predictMomentum =
         pimple.dict().lookupOrDefault<bool>("momentumPredictor", false);
@@ -244,7 +244,8 @@ void Foam::solvers::OpenPDAC::checkFiniteField(const volScalarField& fld,
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::solvers::OpenPDAC::OpenPDAC(fvMesh& mesh)
-: fluidSolver(mesh),
+: 
+  basicFluidSolver(mesh),
 
   predictMomentum(
       pimple.dict().lookupOrDefault<Switch>("momentumPredictor", false)),
@@ -255,6 +256,26 @@ Foam::solvers::OpenPDAC::OpenPDAC(fvMesh& mesh)
       pimple.dict().lookupOrDefault<Switch>("dragCorrection", false)),
 
   nEnergyCorrectors(pimple.dict().lookupOrDefault<int>("nEnergyCorrectors", 1)),
+
+    trDeltaT
+    (
+        LTS
+      ? new volScalarField
+        (
+            IOobject
+            (
+                fv::localEulerDdt::rDeltaTName,
+                runTime.name(),
+                mesh,
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE
+            ),
+            mesh,
+            dimensionedScalar(dimless/dimTime, 1),
+            extrapolatedCalculatedFvPatchScalarField::typeName
+        )
+      : nullptr
+    ),
 
   lowPressureTimestepCorrection(pimple.dict().lookupOrDefault<Switch>(
       "lowPressureTimestepCorrection", false)),

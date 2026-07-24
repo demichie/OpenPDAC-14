@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2022-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -43,7 +43,7 @@ SourceFiles
 
 See also
     Foam::solvers::compressibleVoF
-    Foam::solvers::fluidSolver
+    Foam::solvers::basicFluidSolver
     Foam::solvers::incompressibleFluid
 
 \*---------------------------------------------------------------------------*/
@@ -51,7 +51,7 @@ See also
 #ifndef multiphaseEuler_H
 #define multiphaseEuler_H
 
-#include "fluidSolver.H"
+#include "basicFluidSolver.H"
 #include "momentumTransferSystem.H"
 #include "heatTransferSystem.H"
 #include "populationBalanceSystem.H"
@@ -72,7 +72,7 @@ namespace solvers
 
 class multiphaseEuler
 :
-    public fluidSolver
+    public basicFluidSolver
 {
 
 protected:
@@ -143,7 +143,7 @@ protected:
 
     // Optional models
 
-        const IOMRFZoneList& MRF;
+        const MRFZones& MRF;
 
 
     // Cached temporary fields

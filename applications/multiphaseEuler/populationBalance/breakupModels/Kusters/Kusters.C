@@ -31,32 +31,26 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
     defineTypeNameAndDebug(Kusters, 0);
-    addToRunTimeSelectionTable
-    (
-        breakupModel,
-        Kusters,
-        dictionary
-    );
+    addToRunTimeSelectionTable(breakupModel, Kusters, dictionary);
 }
 }
 }
 
-using Foam::constant::mathematical::pi;
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::breakupModels::Kusters::Kusters
+Foam::populationBalance::breakupModels::Kusters::Kusters
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 :
-    breakupModel(popBal, dict),
+    daughterSizeDistribution(popBal, dict),
     B_("B", dimensionSet(0, 3, -3, 0, 0), dict),
     dP_("dP", dimLength, dict),
     kc_("kc", dimless, dict, 1),
@@ -66,15 +60,12 @@ Foam::diameterModels::breakupModels::Kusters::Kusters
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::breakupModels::Kusters::setBreakupRate
-(
-    volScalarField::Internal& breakupRate,
-    const label i
-)
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::breakupModels::Kusters::rate(const label i) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
+    using Foam::constant::mathematical::pi;
 
-    tmp<volScalarField> tdi = fi.d();
+    tmp<volScalarField> tdi = popBal_.d(i);
     const volScalarField::Internal& di = tdi();
 
     tmp<volScalarField> tepsilonc(popBal_.continuousTurbulence().epsilon());
@@ -82,7 +73,7 @@ void Foam::diameterModels::breakupModels::Kusters::setBreakupRate
     tmp<volScalarField> tnu(popBal_.continuousPhase().fluidThermo().nu());
     const volScalarField::Internal nuc = tnu();
 
-    breakupRate =
+    return
         sqrt(4*epsilonc/(15*pi*nuc))
        *exp(- B_/(dP_*0.5*pow(pow(di/dP_, Df_)/kc_, 1/Df_))/epsilonc);
 }

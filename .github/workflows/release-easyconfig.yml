@@ -3,7 +3,7 @@ name: Publish EasyConfig Release Asset
 on:
   workflow_run:
     workflows:
-      - Build and Test OpenPDAC-13
+      - Build and Test OpenPDAC-14
     types:
       - completed
   workflow_dispatch:
@@ -30,7 +30,7 @@ jobs:
           if echo "$REFNAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "is_release_tag=true" >> "$GITHUB_OUTPUT"
             echo "version=$REFNAME" >> "$GITHUB_OUTPUT"
-            echo "asset_name=OpenPDAC-${REFNAME}-cpeGNU-24.03-OpenFOAM-13.eb" >> "$GITHUB_OUTPUT"
+            echo "asset_name=OpenPDAC-${REFNAME}-cpeGNU-24.03-OpenFOAM-14.eb" >> "$GITHUB_OUTPUT"
           else
             echo "is_release_tag=false" >> "$GITHUB_OUTPUT"
             echo "Ref '$REFNAME' is not a release tag like 1.2.0"

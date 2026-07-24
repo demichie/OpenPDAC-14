@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2015-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2015-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -93,10 +93,13 @@ class heatTransferSystem
     // Private Member Functions
 
         //- Create IO object for an optional constant/heatTransfer file
-        IOobject io(const phaseSystem&) const;
+        static IOobject io(const phaseSystem&);
 
         //- Return the models dictionary
         const dictionary& modelsDict() const;
+
+        //- Read the models
+        void readModels();
 
         //- Return the two-resistance heat transfer coefficients between a pair
         //  of phases with additional arguments

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -54,10 +54,13 @@ Foam::kineticTheoryModels::granularPressureModel::~granularPressureModel() {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-bool Foam::kineticTheoryModels::granularPressureModel::read(
-    const dictionary& dict)
+bool Foam::kineticTheoryModels::granularPressureModel::read
+(
+    const dictionary& dict
+)
 {
-    const dictionary& coeffDict = dict.optionalSubDict(type() + "Coeffs");
+    const dictionary& coeffDict =
+        dict.optionalTypeDict(type());
     return readCoeffs(coeffDict);
 }
 

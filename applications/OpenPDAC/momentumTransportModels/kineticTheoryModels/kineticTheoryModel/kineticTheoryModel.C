@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -43,7 +43,7 @@ Foam::RASModels::kineticTheoryModel::continuousPhase() const
     {
         if (fluid.movingPhases().size() != 2)
         {
-            FatalIOErrorInFunction(coeffDict())
+            FatalIOErrorInFunction(typeDict())
                 << "Continuous phase name must be specified "
                 << "when there are more than two moving phases."
                 << exit(FatalIOError);
@@ -80,36 +80,39 @@ Foam::RASModels::kineticTheoryModel::kineticTheoryModel(
   phase_(refCast<const phaseModel>(viscosity)),
 
   continuousPhaseName_(
-      coeffDict().lookupOrDefault("continuousPhase", word::null)),
+      typeDict().lookupOrDefault("continuousPhase", word::null)),
 
-  viscosityModel_(kineticTheoryModels::viscosityModel::New(coeffDict())),
-  conductivityModel_(kineticTheoryModels::conductivityModel::New(coeffDict())),
+  viscosityModel_(kineticTheoryModels::viscosityModel::New(typeDict())),
+  conductivityModel_(kineticTheoryModels::conductivityModel::New(typeDict())),
   granularPressureModel_(
-      kineticTheoryModels::granularPressureModel::New(coeffDict())),
+      kineticTheoryModels::granularPressureModel::New(typeDict())),
   frictionalStressModel_(
-      kineticTheoryModels::frictionalStressModel::New(coeffDict())),
+      kineticTheoryModels::frictionalStressModel::New(typeDict())),
 
-  frictInTheta_(coeffDict().lookupOrDefault("frictInTheta", false)),
+  frictInTheta_(typeDict().lookupOrDefault("frictInTheta", false)),
 
-  multiParticles_(coeffDict().lookupOrDefault("multiParticles", false)),
-  equilibrium_(coeffDict().lookup("equilibrium")),
-  e_("e", dimless, coeffDict()),
-  residualAlpha_("residualAlpha", dimless, coeffDict()),
+  multiParticles_(typeDict().lookupOrDefault("multiParticles", false)),
+  equilibrium_(typeDict().lookup("equilibrium")),
+  e_("e", dimless, typeDict()),
+  residualAlpha_("residualAlpha", dimless, typeDict()),
 
   maxNut_("maxNut",
           dimensionSet(0, 2, -1, 0, 0),
-          coeffDict().lookupOrDefault<scalar>("maxNut", 1000)),
+        typeDict().lookupOrDefault<scalar>("maxNut", 1000)
+    ),
 
   residualTheta_("residualTheta",
                  dimensionSet(0, 2, -2, 0, 0),
-                 coeffDict().lookupOrDefault<scalar>("residualTheta", 1e-6)),
+                 typeDict().lookupOrDefault<scalar>("residualTheta", 1e-6)),
 
   Theta_(IOobject(IOobject::groupName("Theta", phase_.name()),
                   U.time().name(),
                   U.mesh(),
                   IOobject::MUST_READ,
                   IOobject::AUTO_WRITE),
-         U.mesh()),
+        U.mesh(),
+        dimensions::kinematicStress
+    ),
 
   lambda_(IOobject(IOobject::groupName(typedName("lambda"), phase_.name()),
                    U.time().name(),
@@ -183,7 +186,7 @@ bool Foam::RASModels::kineticTheoryModel::read()
     if (eddyViscosity<
             RASModel<phaseCompressible::momentumTransportModel>>::read())
     {
-        const dictionary& coeffDict = this->coeffDict();
+        const dictionary& coeffDict = this->typeDict();
         coeffDict.lookup("multiParticles") >> multiParticles_;
         coeffDict.lookup("equilibrium") >> equilibrium_;
         e_.readIfPresent(coeffDict);

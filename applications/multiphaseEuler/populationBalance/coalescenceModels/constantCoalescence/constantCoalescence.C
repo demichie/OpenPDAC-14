@@ -30,7 +30,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -48,7 +48,7 @@ namespace coalescenceModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::constantCoalescence::
+Foam::populationBalance::coalescenceModels::constantCoalescence::
 constantCoalescence
 (
     const populationBalanceModel& popBal,
@@ -62,15 +62,20 @@ constantCoalescence
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::constantCoalescence::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::constantCoalescence::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    coalescenceRate += rate_;
+    return
+        volScalarField::Internal::New
+        (
+            "coalescenceRate",
+            popBal_.mesh(),
+            rate_
+        );
 }
 
 

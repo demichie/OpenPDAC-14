@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::coalescenceModels::AdachiStuartFokkink
+    Foam::populationBalance::coalescenceModels::AdachiStuartFokkink
 
 Description
     Model describing aggregation of solid particles in turbulent flows.
@@ -65,7 +65,7 @@ SourceFiles
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -99,20 +99,19 @@ public:
 
     // Member Functions
 
-        //- Add to coalescenceRate
-        virtual void addToCoalescenceRate
+        //- Return the coalescence rate between two groups
+        virtual tmp<volScalarField::Internal> rate
         (
-            volScalarField::Internal& coalescenceRate,
             const label i,
             const label j
-        );
+        ) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace coalescenceModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -33,8 +33,8 @@ Foam::kineticTheoryModels::granularPressureModel::New(const dictionary& dict)
 {
     const word granularPressureModelType(dict.lookup("granularPressureModel"));
 
-    Info << "Selecting granularPressureModel " << granularPressureModelType
-         << endl;
+    Info<< indentOrNl << "Selecting " << typeName << ' '
+        << granularPressureModelType << endl;
 
     dictionaryConstructorTable::iterator cstrIter =
         dictionaryConstructorTablePtr_->find(granularPressureModelType);
@@ -51,7 +51,9 @@ Foam::kineticTheoryModels::granularPressureModel::New(const dictionary& dict)
     }
 
     const dictionary& coeffDict =
-        dict.optionalSubDict(granularPressureModelType + "Coeffs");
+        dict.optionalTypeDict(granularPressureModelType);
+
+    printDictionary print(coeffDict);
 
     return autoPtr<granularPressureModel>(cstrIter()(coeffDict));
 }

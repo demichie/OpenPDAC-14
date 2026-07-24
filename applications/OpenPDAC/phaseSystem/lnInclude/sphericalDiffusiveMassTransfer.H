@@ -1,0 +1,1 @@
+../interfacialModels/diffusiveMassTransferModels/sphericalDiffusiveMassTransfer/sphericalDiffusiveMassTransfer.H

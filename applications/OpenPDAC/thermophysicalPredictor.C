@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2022-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -97,7 +97,7 @@ void Foam::solvers::OpenPDAC::energyPredictor()
         // Includes heat transfer between phases and fvModels sources
         fvScalarMatrix EEqn(
             phase.heEqn()
-            == *heatTransfer[phase.name()]
+            == heatTransfer[phase.name()]
                    + fvModels().source(alpha, rho, phase.thermo().he()));
 
         // Apply drag energy correction if enabled

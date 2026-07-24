@@ -3,7 +3,7 @@ name: Release Coverage Report
 on:
   workflow_run:
     workflows:
-      - Build and Test OpenPDAC-13
+      - Build and Test OpenPDAC-14
     types:
       - completed
 
@@ -68,7 +68,7 @@ jobs:
           sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
           sudo add-apt-repository http://dl.openfoam.org/ubuntu
           sudo apt-get update
-          sudo apt-get -y install openfoam13 wget lcov
+          sudo apt-get -y install openfoam14 wget lcov
 
       - name: Install Miniconda and create environment
         shell: bash
@@ -100,7 +100,7 @@ jobs:
             
             conda activate OpenPDACconda
             
-            source /opt/openfoam13/etc/bashrc
+            source /opt/openfoam14/etc/bashrc
             
             echo "Compiling OpenPDAC solver..."
             cd applications/OpenPDAC
@@ -116,7 +116,7 @@ jobs:
             set +m
 
             conda activate OpenPDACconda
-            source /opt/openfoam13/etc/bashrc
+            source /opt/openfoam14/etc/bashrc
 
             cd run/Valentine2020_twoP
             chmod +x ./run_coverage_Valentine2020_twoP.sh

@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::breakupModels::Laakkonen
+    Foam::populationBalance::breakupModels::Laakkonen
 
 Description
     Model of Laakkonen et al. (2007). The total breakup rate is calculated by
@@ -75,13 +75,13 @@ SourceFiles
 #ifndef Laakkonen_H
 #define Laakkonen_H
 
-#include "breakupModel.H"
+#include "daughterSizeDistribution.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
@@ -92,7 +92,7 @@ namespace breakupModels
 
 class Laakkonen
 :
-    public breakupModel
+    public daughterSizeDistribution
 {
     // Private Data
 
@@ -127,19 +127,15 @@ public:
 
     // Member Functions
 
-        //- Set total breakupRate
-        virtual void setBreakupRate
-        (
-            volScalarField::Internal& breakupRate,
-            const label i
-        );
+        //- Return the breakup rate for a group
+        virtual tmp<volScalarField::Internal> rate(const label i) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace breakupModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

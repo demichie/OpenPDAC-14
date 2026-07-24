@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2017-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2017-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -25,6 +25,7 @@ License
 
 #include "populationBalanceSystem.H"
 #include "fvmSup.H"
+#include "populationBalance.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -38,16 +39,11 @@ namespace Foam
 
 void Foam::populationBalanceSystem::addDmdts
 (
-    const diameterModels::populationBalanceModel::dmdtfTable& dmdtfs,
+    const populationBalanceModel::dmdtfTable& dmdtfs,
     PtrList<volScalarField::Internal>& dmdts
 ) const
 {
-    forAllConstIter
-    (
-        diameterModels::populationBalanceModel::dmdtfTable,
-        dmdtfs,
-        dmdtfIter
-    )
+    forAllConstIter(populationBalanceModel::dmdtfTable, dmdtfs, dmdtfIter)
     {
         const phaseInterface interface(fluid_, dmdtfIter.key());
 
@@ -59,13 +55,13 @@ void Foam::populationBalanceSystem::addDmdts
 
 void Foam::populationBalanceSystem::addDmdtUfs
 (
-    const diameterModels::populationBalanceModel::dmdtfTable& dmdtfs,
+    const populationBalanceModel::dmdtfTable& dmdtfs,
     HashPtrTable<fvVectorMatrix>& eqns
 ) const
 {
     forAllConstIter
     (
-        diameterModels::populationBalanceModel::dmdtfTable,
+        populationBalanceModel::dmdtfTable,
         dmdtfs,
         dmdtfIter
     )
@@ -81,13 +77,13 @@ void Foam::populationBalanceSystem::addDmdtUfs
 
         if (!phase1.stationary())
         {
-            *eqns[phase1.name()] +=
+            eqns[phase1.name()] +=
                 dmdtf21*phase2.U()()() + fvm::Sp(dmdtf12, phase1.URef());
         }
 
         if (!phase2.stationary())
         {
-            *eqns[phase2.name()] -=
+            eqns[phase2.name()] -=
                 dmdtf12*phase1.U()()() + fvm::Sp(dmdtf21, phase2.URef());
         }
     }
@@ -96,17 +92,12 @@ void Foam::populationBalanceSystem::addDmdtUfs
 
 void Foam::populationBalanceSystem::addDmdtHefs
 (
-    const diameterModels::populationBalanceModel::dmdtfTable& dmdtfs,
+    const populationBalanceModel::dmdtfTable& dmdtfs,
     HashPtrTable<fvScalarMatrix>& eqns
 ) const
 {
     // Loop the pairs
-    forAllConstIter
-    (
-        diameterModels::populationBalanceModel::dmdtfTable,
-        dmdtfs,
-        dmdtfIter
-    )
+    forAllConstIter(populationBalanceModel::dmdtfTable, dmdtfs, dmdtfIter)
     {
         const phaseInterface interface(fluid_, dmdtfIter.key());
 
@@ -126,34 +117,29 @@ void Foam::populationBalanceSystem::addDmdtHefs
         const volScalarField::Internal K2(phase2.K());
 
         // Transfer of sensible enthalpy within the phases
-        *eqns[phase1.name()] +=
+        eqns[phase1.name()] +=
             dmdtf*hs1 + fvm::Sp(dmdtf12, he1) - dmdtf12*he1;
-        *eqns[phase2.name()] -=
+        eqns[phase2.name()] -=
             dmdtf*hs2 + fvm::Sp(dmdtf21, he2) - dmdtf21*he2;
 
         // Transfer of sensible enthalpy between the phases
-        *eqns[phase1.name()] += dmdtf21*(hs2 - hs1);
-        *eqns[phase2.name()] -= dmdtf12*(hs1 - hs2);
+        eqns[phase1.name()] += dmdtf21*(hs2 - hs1);
+        eqns[phase2.name()] -= dmdtf12*(hs1 - hs2);
 
         // Transfer of kinetic energy
-        *eqns[phase1.name()] += dmdtf21*K2 + dmdtf12*K1;
-        *eqns[phase2.name()] -= dmdtf12*K1 + dmdtf21*K2;
+        eqns[phase1.name()] += dmdtf21*K2 + dmdtf12*K1;
+        eqns[phase2.name()] -= dmdtf12*K1 + dmdtf21*K2;
     }
 }
 
 
 void Foam::populationBalanceSystem::addDmdtYfs
 (
-    const diameterModels::populationBalanceModel::dmdtfTable& dmdtfs,
+    const populationBalanceModel::dmdtfTable& dmdtfs,
     HashPtrTable<fvScalarMatrix>& eqns
 ) const
 {
-    forAllConstIter
-    (
-        diameterModels::populationBalanceModel::dmdtfTable,
-        dmdtfs,
-        dmdtfIter
-    )
+    forAllConstIter(populationBalanceModel::dmdtfTable, dmdtfs, dmdtfIter)
     {
         const phaseInterface interface(fluid_, dmdtfIter.key());
 
@@ -169,8 +155,8 @@ void Foam::populationBalanceSystem::addDmdtYfs
             const volScalarField& Y1 = phase1.Y()[Yi1];
             const volScalarField& Y2 = phase2.Y(Y1.member());
 
-            *eqns[Y1.name()] += dmdtf21*Y2 + fvm::Sp(dmdtf12, Y1);
-            *eqns[Y2.name()] -= dmdtf12*Y1 + fvm::Sp(dmdtf21, Y2);
+            eqns[Y1.name()] += dmdtf21*Y2 + fvm::Sp(dmdtf12, Y1);
+            eqns[Y2.name()] -= dmdtf12*Y1 + fvm::Sp(dmdtf21, Y2);
         }
     }
 }
@@ -186,15 +172,34 @@ Foam::populationBalanceSystem::populationBalanceSystem
     fluid_(fluid),
     populationBalances_()
 {
-    if (fluid_.found("populationBalances"))
+    // Extract the names of all the population balances from the associated
+    // diameter models
+    wordHashSet populationBalanceNameSet;
+    forAll(fluid_.phases(), phasei)
     {
-        PtrList<diameterModels::populationBalanceModel> popBals
-        (
-            fluid_.lookup("populationBalances"),
-            diameterModels::populationBalanceModel::iNew(fluid_)
-        );
+        const diameterModel& diameter = fluid_.phases()[phasei].diameter();
 
-        populationBalances_.transfer(popBals);
+        if (!isA<diameterModels::populationBalance>(diameter)) continue;
+
+        populationBalanceNameSet.insert
+        (
+            refCast<const diameterModels::populationBalance>
+            (
+                diameter
+            ).popBalName()
+        );
+    }
+
+    // Construct the population balance models
+    const wordList populationBalanceNames = populationBalanceNameSet.toc();
+    populationBalances_.resize(populationBalanceNames.size());
+    forAll(populationBalances_, popBali)
+    {
+        populationBalances_.set
+        (
+            popBali,
+            new populationBalanceModel(fluid_, populationBalanceNames[popBali])
+        );
     }
 }
 
@@ -239,7 +244,7 @@ Foam::populationBalanceSystem::momentumTransfer()
         eqns.insert
         (
             phase.name(),
-            new fvVectorMatrix(phase.U(), dimMass*dimVelocity/dimTime)
+            new fvVectorMatrix(phase.U(), dimensions::momentum/dimensions::time)
         );
     }
 
@@ -313,7 +318,7 @@ Foam::populationBalanceSystem::specieTransfer() const
             eqns.insert
             (
                 Y[i].name(),
-                new fvScalarMatrix(Y[i], dimMass/dimTime)
+                new fvScalarMatrix(Y[i], dimensions::mass/dimensions::time)
             );
         }
     }

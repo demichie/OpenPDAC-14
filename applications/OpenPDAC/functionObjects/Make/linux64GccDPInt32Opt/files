@@ -1,0 +1,6 @@
+SOURCE += phaseForces/phaseForces.C
+SOURCE += phaseMap/phaseMap.C
+
+SOURCE += cloudDetails/cloudDetails.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACFunctionObjects

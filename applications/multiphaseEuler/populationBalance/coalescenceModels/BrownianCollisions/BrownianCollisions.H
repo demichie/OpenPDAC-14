@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::coalescenceModels::BrownianCollisions
+    Foam::populationBalance::coalescenceModels::BrownianCollisions
 
 Description
     Model describing coagulation due to Brownian motion. Utilises collisional
@@ -77,7 +77,7 @@ SourceFiles
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -129,23 +129,22 @@ public:
 
     // Member Functions
 
-        //- Precompute diameter independent expressions
+        //- Pre-compute diameter independent expressions
         virtual void precompute();
 
-        //- Add to coalescenceRate
-        virtual void addToCoalescenceRate
+        //- Return the coalescence rate between two groups
+        virtual tmp<volScalarField::Internal> rate
         (
-            volScalarField::Internal& coalescenceRate,
             const label i,
             const label j
-        );
+        ) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace coalescenceModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

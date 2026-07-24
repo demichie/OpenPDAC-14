@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2017-2024 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2017-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -29,7 +29,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
     defineTypeNameAndDebug(breakupModel, 0);
     defineRunTimeSelectionTable(breakupModel, dictionary);
@@ -39,51 +39,65 @@ namespace diameterModels
 
 // * * * * * * * * * * * * * * * * Selector  * * * * * * * * * * * * * * * * //
 
-Foam::autoPtr<Foam::diameterModels::breakupModel>
-Foam::diameterModels::breakupModel::New
+Foam::autoPtr<Foam::populationBalance::breakupModel>
+Foam::populationBalance::breakupModel::New
 (
-    const word& type,
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 {
-    Info<< "Selecting breakup model for "
-        << popBal.name() << ": " << type << endl;
+    const bool haveModelDict = dict.isDict(typeName);
+
+    word modelType;
+    const dictionary* modelDictPtr = nullptr;
+    if (haveModelDict)
+    {
+        modelDictPtr = &dict.subDict(typeName);
+        modelType = modelDictPtr->lookup<word>("type");
+    }
+    else
+    {
+        modelType = dict.lookup<word>(typeName);
+        modelDictPtr = &dict.optionalTypeDict(modelType);
+    }
+    const dictionary& modelDict = *modelDictPtr;
+
+    Info<< indentOrNl << "Selecting " << typeName << ' ' << modelType << endl;
 
     dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(type);
+        dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
         FatalErrorInFunction
-            << "Unknown breakup model type "
-            << type << nl << nl
-            << "Valid breakup model types : " << endl
+            << "Unknown " << typeName << " type "
+            << modelType << endl << endl
+            << "Valid " << typeName << " types are : " << endl
             << dictionaryConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
 
-    return autoPtr<breakupModel>(cstrIter()(popBal, dict));
+    printDictionary print(modelDict);
+
+    return cstrIter()(popBal, modelDict);
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::breakupModel::breakupModel
+Foam::populationBalance::breakupModel::breakupModel
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 :
     popBal_(popBal)
-{
-    dsd_ = daughterSizeDistributionModel::New(*this, dict);
-}
+{}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::breakupModel::precompute()
+void Foam::populationBalance::breakupModel::precompute()
 {}
 
 

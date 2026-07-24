@@ -30,7 +30,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
@@ -43,28 +43,33 @@ namespace breakupModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::breakupModels::powerLaw::powerLaw
+Foam::populationBalance::breakupModels::powerLaw::powerLaw
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 :
-    breakupModel(popBal, dict),
+    daughterSizeDistribution(popBal, dict),
     power_(dict.lookup<scalar>("power"))
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::breakupModels::powerLaw::setBreakupRate
-(
-    volScalarField::Internal& breakupRate,
-    const label i
-)
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::breakupModels::powerLaw::rate(const label i) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-
-    breakupRate.primitiveFieldRef() = pow(fi.x().value(), power_);
+    return
+        volScalarField::Internal::New
+        (
+            "breakupRate",
+            popBal_.mesh(),
+            dimensionedScalar
+            (
+                inv(dimTime),
+                pow(popBal_.v(i).value(), power_)
+            )
+        );
 }
 
 

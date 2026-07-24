@@ -354,12 +354,21 @@ void Foam::phaseSystem::solve(const alphaControl& alphaControls,
                 const phaseModel& phase = movingPhases()[movingPhasei];
                 const volScalarField& alpha = phase;
 
-                alphaPhis.set(movingPhasei,
-                              new surfaceScalarField(
-                                  IOobject::groupName("alphaPhi", phase.name()),
-                                  fvc::flux(phase.phi()(),
-                                            alpha,
-                                            "div(phi," + alpha.name() + ')')));
+                alphaPhis.set
+                (
+                    movingPhasei,
+                    surfaceScalarField::New
+                    (
+                        IOobject::groupName("alphaPhi", phase.name()),
+                        fvc::flux
+                        (
+                            phase.phi()(),
+                            alpha,
+                            "div(phi," + alpha.name() + ')'
+                        ),
+                        phase.alphaPhi()().boundaryField().types()
+                    )
+                );
 
                 surfaceScalarField& alphaPhi = alphaPhis[movingPhasei];
 
@@ -411,11 +420,16 @@ void Foam::phaseSystem::solve(const alphaControl& alphaControls,
                 // Construct the optional bounded phase-flux
                 if (boundedPredictor)
                 {
-                    alphaPhiBDs.set(
+                    alphaPhiBDs.set
+                    (
                         movingPhasei,
-                        new surfaceScalarField(
+                        surfaceScalarField::New
+                        (
                             IOobject::groupName("alphaPhiBD", phase.name()),
-                            upwind<scalar>(mesh_, phase.phi()()).flux(alpha)));
+                            upwind<scalar>(mesh_, phase.phi()()).flux(alpha),
+                            phase.alphaPhi()().boundaryField().types()
+                        )
+                    );
 
                     const surfaceScalarField::Boundary& alphaPhiBf =
                         alphaPhi.boundaryField();
@@ -451,7 +465,9 @@ void Foam::phaseSystem::solve(const alphaControl& alphaControls,
 
                     // Calculate the phase-flux correction
                     // with respect to the bounded implicit prediction
-                    alphaPhiCorrs[movingPhasei] -= alphaPhiPreds[movingPhasei];
+                    alphaPhiCorrs[movingPhasei] ==
+                        alphaPhiCorrs[movingPhasei]
+                      - alphaPhiPreds[movingPhasei];
 
                     // Limit the phase-flux correction
                     MULES::limitCorr(boundedPredictor ? MULESBD

@@ -31,17 +31,12 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace breakupModels
 {
     defineTypeNameAndDebug(Laakkonen, 0);
-    addToRunTimeSelectionTable
-    (
-        breakupModel,
-        Laakkonen,
-        dictionary
-    );
+    addToRunTimeSelectionTable(breakupModel, Laakkonen, dictionary);
 }
 }
 }
@@ -49,14 +44,13 @@ namespace breakupModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::breakupModels::Laakkonen::
-Laakkonen
+Foam::populationBalance::breakupModels::Laakkonen::Laakkonen
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
 )
 :
-    breakupModel(popBal, dict),
+    daughterSizeDistribution(popBal, dict),
     C1_("C1", dimensionSet(0, -2.0/3.0, 0, 0, 0), dict, 2.25),
     C2_("C2", dimless, dict, 0.04),
     C3_("C3", dimless, dict, 0.01)
@@ -65,17 +59,15 @@ Laakkonen
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::breakupModels::Laakkonen::setBreakupRate
-(
-    volScalarField::Internal& breakupRate,
-    const label i
-)
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::breakupModels::Laakkonen::rate(const label i) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
+    const dimensionedScalar& dSphi = popBal_.dSph(i);
 
     const volScalarField::Internal& rhoc = popBal_.continuousPhase().rho();
+    const volScalarField::Internal& rhod = popBal_.phases()[i].rho();
 
-    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(fi.phase()));
+    tmp<volScalarField> tsigma(popBal_.sigmaWithContinuousPhase(i));
     const volScalarField::Internal& sigma = tsigma();
 
     tmp<volScalarField> tepsilonc(popBal_.continuousTurbulence().epsilon());
@@ -83,7 +75,7 @@ void Foam::diameterModels::breakupModels::Laakkonen::setBreakupRate
     tmp<volScalarField> tmu(popBal_.continuousPhase().fluidThermo().mu());
     const volScalarField::Internal muc = tmu();
 
-    breakupRate =
+    return
         C1_
        *cbrt(epsilonc)
        *erfc
@@ -93,15 +85,15 @@ void Foam::diameterModels::breakupModels::Laakkonen::setBreakupRate
                 C2_
                *sigma
                /(
-                   rhoc*pow(fi.dSph(), 5.0/3.0)
+                   rhoc*pow(dSphi, 5.0/3.0)
                   *pow(epsilonc, 2.0/3.0)
                 )
               + C3_
                *muc
                /(
-                    sqrt(rhoc*fi.phase().rho())
+                    sqrt(rhoc*rhod)
                    *cbrt(epsilonc)
-                   *pow(fi.dSph(), 4.0/3.0)
+                   *pow(dSphi, 4.0/3.0)
                 )
             )
         );

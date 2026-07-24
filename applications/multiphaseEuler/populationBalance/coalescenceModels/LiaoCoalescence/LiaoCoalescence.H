@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::coalescenceModels::LiaoCoalescence
+    Foam::populationBalance::coalescenceModels::LiaoCoalescence
 
 Description
     Bubble coalescence model of Liao et al. (2015). The terminal velocities and
@@ -86,7 +86,7 @@ SourceFiles
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -154,13 +154,13 @@ class LiaoCoalescence
         volScalarField::Internal dCrit_;
 
         //- Relative velocity for turbulent collisions
-        volScalarField::Internal uRelTurb_;
+        mutable volScalarField::Internal uRelTurb_;
 
         //- Relative velocity for buoyancy-induced collisions
-        volScalarField::Internal uRelBuoy_;
+        mutable volScalarField::Internal uRelBuoy_;
 
         //- Relative velocity for shear-induced collisions
-        volScalarField::Internal uRelShear_;
+        mutable volScalarField::Internal uRelShear_;
 
 
 public:
@@ -184,23 +184,22 @@ public:
 
     // Member Functions
 
-        //- Precompute diameter independent expressions
+        //- Pre-compute diameter independent expressions
         virtual void precompute();
 
-        //- Add to coalescenceRate
-        virtual void addToCoalescenceRate
+        //- Return the coalescence rate between two groups
+        virtual tmp<volScalarField::Internal> rate
         (
-            volScalarField::Internal& coalescenceRate,
             const label i,
             const label j
-        );
+        ) const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace coalescenceModels
-} // End namespace diameterModels
+} // End namespace populationBalance
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -184,7 +184,7 @@ void Foam::hydrostaticInitialisation(volScalarField& p_rgh,
             // --- Correction of Boundary Condition for p_rgh ---
             // The BC for p_rgh on the reference patch must be made consistent
             // with the calculated ph, rho, and gh values.
-            label patchID = mesh.boundaryMesh().findIndex(patchName);
+            label patchID = mesh.boundary().findIndex(patchName);
 
             // we change the fixed value b.c. of ph_rgh at the top face, in
             // order to be consistent with the values of ph, rho and gh

@@ -38,7 +38,7 @@ jobs:
           sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
           sudo add-apt-repository http://dl.openfoam.org/ubuntu
           sudo apt-get update
-          sudo apt-get -y install openfoam13 wget
+          sudo apt-get -y install openfoam14 wget
           sudo apt-get -y install libc6 lsb-release software-properties-common gnupg bear
 
       - name: Compile solver and utilities
@@ -47,7 +47,7 @@ jobs:
           bash -ic '
             set +m
 
-            source /opt/openfoam13/etc/bashrc
+            source /opt/openfoam14/etc/bashrc
 
             echo "Compiling OpenPDAC solver..."
             cd applications/OpenPDAC

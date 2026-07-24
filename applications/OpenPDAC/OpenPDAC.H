@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2022-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2022-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -44,7 +44,7 @@ SourceFiles
 
 See also
     Foam::solvers::compressibleVoF
-    Foam::solvers::fluidSolver
+    Foam::solvers::basicFluidSolver
     Foam::solvers::incompressibleFluid
 
 \*---------------------------------------------------------------------------*/
@@ -52,7 +52,7 @@ See also
 #ifndef OpenPDAC_H
 #define OpenPDAC_H
 
-#include "fluidSolver.H"
+#include "basicFluidSolver.H"
 #include "momentumTransferSystem.H"
 #include "heatTransferSystem.H"
 #include "phaseCompressibleMomentumTransportModel.H"
@@ -72,7 +72,7 @@ namespace solvers
                           Class OpenPDAC Declaration
 \*---------------------------------------------------------------------------*/
 
-class OpenPDAC : public fluidSolver
+class OpenPDAC : public basicFluidSolver
 {
 
 protected:
@@ -96,6 +96,12 @@ protected:
     int nEnergyCorrectors;
 
     phaseSystem::alphaControl alphaControls;
+
+    //- Optional LTS reciprocal time-step field
+    tmp<volScalarField> trDeltaT;
+
+    //- Optional LTS reciprocal face time-step field
+    tmp<surfaceScalarField> trDeltaTf;
 
     //- set dispersed phase temperature as continuum when alpha<residual
     //  Defaults to false
@@ -196,7 +202,7 @@ protected:
 
     // Optional models
 
-    const IOMRFZoneList& MRF;
+    const MRFZones& MRF;
 
 
     // Cached temporary fields

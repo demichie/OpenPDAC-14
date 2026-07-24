@@ -1,7 +1,7 @@
 EXE_INC = \
     -I$(LIB_SRC)/lagrangian/basic/lnInclude \
     -I$(LIB_SRC)/lagrangian/parcel/lnInclude \
-    -I$(FOAM_MODULES)/fluidSolver/lnInclude \
+    -I$(FOAM_MODULES)/basicFluidSolver/lnInclude \
     -I./phaseSystem/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
@@ -18,7 +18,7 @@ LIB_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
     -llagrangian \
     -lOpenPDAClagrangianParcel \
-    -lfluidSolver \
+    -lbasicFluidSolver \
     -lOpenPDACMomentumTransportModels \
     -lOpenPDACThermophysicalTransportModels \
     -lfvModels \

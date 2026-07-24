@@ -2,52 +2,57 @@ easyblock = 'Binary'
 
 name = 'OpenPDAC'
 version = '@VERSION@'
-versionsuffix = '-OpenFOAM-13'
+versionsuffix = '-OpenFOAM-14'
 
-homepage = 'https://github.com/demichie/OpenPDAC-13'
-description = """OpenPDAC is a framework for Partial Differential Equation Constrained Optimization developed for OpenFOAM."""
+homepage = 'https://github.com/demichie/OpenPDAC-14'
+
+description = """
+OpenPDAC is an Eulerian-Lagrangian multiphase solver for the simulation
+of pyroclastic density currents and related volcanic flows, developed
+for OpenFOAM 14.
+"""
 
 toolchain = {'name': 'cpeGNU', 'version': '24.03'}
 
-source_urls = ['https://github.com/demichie/OpenPDAC-13/archive/refs/tags']
+source_urls = [
+    'https://github.com/demichie/OpenPDAC-14/archive/refs/tags'
+]
+
 sources = [{
     'download_filename': '@VERSION@.tar.gz',
-    'filename':          'OpenPDAC-13-@VERSION@.tar.gz',
+    'filename':          'OpenPDAC-14-@VERSION@.tar.gz',
 }]
 
-# FORCE source extraction (needed with the 'Binary' easyblock)
+# Force source extraction, needed with the Binary easyblock
 extract_sources = True
 
-# Strip the top-level directory during extraction so 'applications'
-# is placed directly in the build root.
+# Strip the top-level GitHub archive directory
 unpack_options = '--strip-components=1'
 
+# This must match the actual OpenFOAM 14 module installed on LUMI.
 dependencies = [
-    ('OpenFOAM', '13', '-patch-20260212'),
+    ('OpenFOAM', '14'),
+    # Alternatively:
+    # ('OpenFOAM', '14', '-patch-20260710'),
 ]
 
 buildininstalldir = False
 
-# Create target directories
 preinstallopts = 'mkdir -p %(installdir)s/bin %(installdir)s/lib && '
 
-# WARNING: Do NOT use single quotes inside the bash -c block below!
 install_cmd = """bash -c '
-    # The environment is automatically prepared by the OpenFOAM dependency.
-    # We just need to force the installation paths to the EasyBuild directory:
+    set -e
+
+    # The environment is prepared by the OpenFOAM dependency.
     export FOAM_USER_APPBIN=%(installdir)s/bin
     export FOAM_USER_LIBBIN=%(installdir)s/lib
 
     # --- STEP 1: Compile topoGrid ---
     echo "Starting compilation of topoGrid..."
+
     if [ -d applications/utilities/topoGrid ]; then
         cd applications/utilities/topoGrid
-
-        # wmake is available thanks to the OpenFOAM module
         wmake
-        if [ $? -ne 0 ]; then echo "ERROR: topoGrid compilation failed"; exit 1; fi
-
-        # Return to the build root
         cd - > /dev/null
     else
         echo "ERROR: Directory applications/utilities/topoGrid not found!"
@@ -58,6 +63,7 @@ install_cmd = """bash -c '
 
     # --- STEP 2: Compile OpenPDAC ---
     echo "Starting compilation of OpenPDAC..."
+
     if [ -d applications/OpenPDAC ]; then
         cd applications/OpenPDAC
 
@@ -75,11 +81,15 @@ install_cmd = """bash -c '
 '"""
 
 sanity_check_paths = {
-    'files': [],
-    'dirs': ['bin', 'lib'],
+    'files': [
+        'bin/topoGrid',
+        'lib/libOpenPDACSolver.so',
+        'lib/libOpenPDACphaseSystem.so',
+        'lib/libOpenPDACMomentumTransportModels.so',
+    ],
+    'dirs': [],
 }
 
-# Ensure OpenFOAM knows where to find these binaries when the OpenPDAC module is loaded
 modextravars = {
     'FOAM_USER_APPBIN': '%(installdir)s/bin',
     'FOAM_USER_LIBBIN': '%(installdir)s/lib',

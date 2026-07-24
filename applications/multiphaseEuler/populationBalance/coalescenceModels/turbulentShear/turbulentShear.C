@@ -31,7 +31,7 @@ License
 
 namespace Foam
 {
-namespace diameterModels
+namespace populationBalance
 {
 namespace coalescenceModels
 {
@@ -49,8 +49,7 @@ namespace coalescenceModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::diameterModels::coalescenceModels::turbulentShear::
-turbulentShear
+Foam::populationBalance::coalescenceModels::turbulentShear::turbulentShear
 (
     const populationBalanceModel& popBal,
     const dictionary& dict
@@ -63,20 +62,16 @@ turbulentShear
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::diameterModels::coalescenceModels::turbulentShear::
-addToCoalescenceRate
+Foam::tmp<Foam::volScalarField::Internal>
+Foam::populationBalance::coalescenceModels::turbulentShear::rate
 (
-    volScalarField::Internal& coalescenceRate,
     const label i,
     const label j
-)
+) const
 {
-    const sizeGroup& fi = popBal_.sizeGroups()[i];
-    const sizeGroup& fj = popBal_.sizeGroups()[j];
-
-    tmp<volScalarField> tdi = fi.d();
+    tmp<volScalarField> tdi = popBal_.d(i);
     const volScalarField::Internal& di = tdi();
-    tmp<volScalarField> tdj = fj.d();
+    tmp<volScalarField> tdj = popBal_.d(j);
     const volScalarField::Internal& dj = tdj();
 
     const volScalarField::Internal& rhoc = popBal_.continuousPhase().rho();
@@ -86,7 +81,7 @@ addToCoalescenceRate
     tmp<volScalarField> tmu(popBal_.continuousPhase().fluidThermo().mu());
     const volScalarField::Internal muc = tmu();
 
-    coalescenceRate += C_*sqrt(epsilonc*rhoc/muc)*pow3(di + dj);
+    return C_*sqrt(epsilonc*rhoc/muc)*pow3(di + dj);
 }
 
 

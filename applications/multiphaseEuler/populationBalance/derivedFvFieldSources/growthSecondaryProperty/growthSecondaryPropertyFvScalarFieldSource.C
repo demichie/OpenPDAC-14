@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2024-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2024-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -31,12 +31,12 @@ License
 Foam::growthSecondaryPropertyFvScalarFieldSource::
 growthSecondaryPropertyFvScalarFieldSource
 (
-    const DimensionedField<scalar, volMesh>& iF,
+    const DimensionedField<scalar, fvMesh>& iF,
     const dictionary& dict
 )
 :
     growthFvScalarFieldSource(iF, dict),
-    secondaryPropertyFvScalarFieldSource(iF)
+    groupPropertyFvScalarField(iF)
 {}
 
 
@@ -44,79 +44,80 @@ Foam::growthSecondaryPropertyFvScalarFieldSource::
 growthSecondaryPropertyFvScalarFieldSource
 (
     const growthSecondaryPropertyFvScalarFieldSource& field,
-    const DimensionedField<scalar, volMesh>& iF
+    const DimensionedField<scalar, fvMesh>& iF
 )
 :
     growthFvScalarFieldSource(field, iF),
-    secondaryPropertyFvScalarFieldSource(iF)
+    groupPropertyFvScalarField(iF)
 {}
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::volMesh>>
+Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::fvMesh>>
 Foam::growthSecondaryPropertyFvScalarFieldSource::internalCoeff
 (
     const fvSource& model,
-    const DimensionedField<scalar, volMesh>& source
+    const DimensionedField<scalar, fvMesh>& source
 ) const
 {
-    const diameterModels::sizeGroup& fi = this->fi();
+    const populationBalanceModel& popBal = this->popBal();
+    const label i = this->i();
+    const volScalarField& fi = popBal.f(i);
 
     return fi.sources()[model.name()].internalCoeff(model, source)*fi;
 }
 
 
-Foam::Pair<Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::volMesh>>>
+Foam::Pair<Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::fvMesh>>>
 Foam::growthSecondaryPropertyFvScalarFieldSource::sourceCoeffs
 (
     const fvSource& model
 ) const
 {
-    const diameterModels::sizeGroup& fi = this->fi();
-    const UPtrList<diameterModels::sizeGroup>& popBalFis =
-        fi.group().popBal().sizeGroups();
+    const populationBalanceModel& popBal = this->popBal();
+    const label i = this->i();
+    const volScalarField& fi = popBal.f(i);
 
-    Pair<tmp<DimensionedField<scalar, volMesh>>> fiSourceCoeffs =
+    Pair<tmp<DimensionedField<scalar, fvMesh>>> fiSourceCoeffs =
         refCast<const growthFvScalarFieldSource>
         (
             fi.sources()[model.name()]
         ).sourceCoeffs(model);
 
-    Pair<tmp<DimensionedField<scalar, volMesh>>> tsourceCoeffs;
+    Pair<tmp<DimensionedField<scalar, fvMesh>>> tsourceCoeffs;
 
-    if (fi.i() != 0)
+    if (i != 0)
     {
-        tsourceCoeffs.first() = fiSourceCoeffs.first()*value(-1, model);
+        tsourceCoeffs.first() = fiSourceCoeffs.first()*value(i - 1, model);
     }
 
-    if (fi.i() != popBalFis.size() - 1)
+    if (i != popBal.nGroups() - 1)
     {
-        tsourceCoeffs.second() = fiSourceCoeffs.second()*value(+1, model);
+        tsourceCoeffs.second() = fiSourceCoeffs.second()*value(i + 1, model);
     }
 
     return tsourceCoeffs;
 }
 
 
-Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::volMesh>>
+Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::fvMesh>>
 Foam::growthSecondaryPropertyFvScalarFieldSource::sourceCoeff
 (
     const fvSource& model,
-    const DimensionedField<scalar, volMesh>& source
+    const DimensionedField<scalar, fvMesh>& source
 ) const
 {
-    const diameterModels::sizeGroup& fi = this->fi();
-    const UPtrList<diameterModels::sizeGroup>& velGrpFis =
-        fi.group().sizeGroups();
+    const populationBalanceModel& popBal = this->popBal();
+    const label i = this->i();
 
-    Pair<tmp<DimensionedField<scalar, volMesh>>> tsourceCoeffs =
+    Pair<tmp<DimensionedField<scalar, fvMesh>>> tsourceCoeffs =
         sourceCoeffs(model);
 
     return
-        fi.i() == velGrpFis.first().i()
+        i ==  popBal.diameters()[i].iFirst()
       ? neg(source)*tsourceCoeffs.second()
-      : fi.i() == velGrpFis.last().i()
+      : i == popBal.diameters()[i].iLast()
       ? pos(source)*tsourceCoeffs.first()
       : pos(source)*tsourceCoeffs.first()
       + neg(source)*tsourceCoeffs.second();

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2015-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2015-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -61,7 +61,7 @@ const Foam::word Foam::momentumTransferSystem::propertiesName
 
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
-Foam::IOobject Foam::momentumTransferSystem::io(const phaseSystem& fluid) const
+Foam::IOobject Foam::momentumTransferSystem::io(const phaseSystem& fluid)
 {
     typeIOobject<IOdictionary> result
     (
@@ -135,6 +135,46 @@ const Foam::dictionary& Foam::momentumTransferSystem::modelsDict() const
 }
 
 
+
+void Foam::momentumTransferSystem::readModels()
+{
+    dragModels_ =
+        generateBlendedInterfacialModels<blendedDragModel>
+        (
+            fluid_,
+            modelsDict<blendedDragModel>()
+        );
+
+    virtualMassModels_ =
+        generateBlendedInterfacialModels<blendedVirtualMassModel>
+        (
+            fluid_,
+            modelsDict<blendedVirtualMassModel>()
+        );
+
+    liftModels_ =
+        generateBlendedInterfacialModels<blendedLiftModel>
+        (
+            fluid_,
+            modelsDict<blendedLiftModel>()
+        );
+
+    wallLubricationModels_ =
+        generateBlendedInterfacialModels<blendedWallLubricationModel>
+        (
+            fluid_,
+            modelsDict<blendedWallLubricationModel>()
+        );
+
+    turbulentDispersionModels_ =
+        generateBlendedInterfacialModels<blendedTurbulentDispersionModel>
+        (
+            fluid_,
+            modelsDict<blendedTurbulentDispersionModel>()
+        );
+}
+
+
 void Foam::momentumTransferSystem::addTmpField
 (
     tmp<surfaceScalarField>& result,
@@ -164,48 +204,15 @@ void Foam::momentumTransferSystem::addTmpField
 Foam::momentumTransferSystem::momentumTransferSystem(const phaseSystem& fluid)
 :
     IOdictionary(io(fluid)),
-    fluid_(fluid),
-    dragModels_
-    (
-        generateBlendedInterfacialModels<blendedDragModel>
-        (
-            fluid_,
-            modelsDict<blendedDragModel>()
-        )
-    ),
-    virtualMassModels_
-    (
-        generateBlendedInterfacialModels<blendedVirtualMassModel>
-        (
-            fluid_,
-            modelsDict<blendedVirtualMassModel>()
-        )
-    ),
-    liftModels_
-    (
-        generateBlendedInterfacialModels<blendedLiftModel>
-        (
-            fluid_,
-            modelsDict<blendedLiftModel>()
-        )
-    ),
-    wallLubricationModels_
-    (
-        generateBlendedInterfacialModels<blendedWallLubricationModel>
-        (
-            fluid_,
-            modelsDict<blendedWallLubricationModel>()
-        )
-    ),
-    turbulentDispersionModels_
-    (
-        generateBlendedInterfacialModels<blendedTurbulentDispersionModel>
-        (
-            fluid_,
-            modelsDict<blendedTurbulentDispersionModel>()
-        )
-    )
-{}
+    fluid_(fluid)
+{
+    Info<< indentOrNl << "Constructing " << typeName << " from "
+        << relativeObjectPath().c_str() << endl;
+
+    printDictionary print(*this);
+
+    readModels();
+}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
@@ -1412,11 +1419,11 @@ bool Foam::momentumTransferSystem::read()
 {
     if (regIOobject::read())
     {
-        bool readOK = true;
+        Kds_.clear();
 
-        // models ...
+        readModels();
 
-        return readOK;
+        return true;
     }
     else
     {

@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2018-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2018-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -26,7 +26,7 @@ Class
 
 Description
     Vapour bubble diameter model for modelling of condensation of vapour
-    bubbles. Calculates bubble diameter as a function of liquid phase
+    bubbles. Calculates bubble diameter as a linear function of liquid phase
     subcooling.
 
     Reference:
@@ -116,8 +116,8 @@ public:
         //- Correct the model
         virtual void correct();
 
-        //- Read phaseProperties dictionary
-        virtual bool read(const dictionary& phaseProperties);
+        //- Read diameter properties dictionary
+        virtual bool read(const dictionary& diameterProperties);
 };
 
 

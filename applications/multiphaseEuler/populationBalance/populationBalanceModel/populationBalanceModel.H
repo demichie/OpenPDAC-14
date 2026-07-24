@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2017-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2017-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::diameterModels::populationBalanceModel
+    Foam::populationBalanceModel
 
 Description
     Model for tracking the evolution of a dispersed phase size distribution due
@@ -44,7 +44,7 @@ Description
     Since the representative volumes are fixed a priori and the total dispersed
     phase volume already available from solving the phase continuity equation,
     the model only determines the evolution of the individual size class
-    fractions
+    fraciions
 
     \f[
         f_{i,\varphi} = \frac{\alpha_{i,\varphi}}{\alpha_{\varphi}}\,,
@@ -118,69 +118,97 @@ Description
 Usage
     Excerpt from an exemplary phaseProperties dictionary:
     \verbatim
-    populationBalances (bubbles);
+    // Define the phases
+    phases          (air water);
 
+    // Settings for the air phase. This phase is in the form of bubbles, the
+    // diameters of which will be represented by a population balance model.
+    // So, set the diameter model to 'populationBalance' and set the name of
+    // the associated population balance to 'bubbles'. The name of the
+    // population balance is arbitrary; it just needs to be unique and
+    // descriptive as it will be referred to below. And if multiple phases
+    // share the same population balance then it needs to be the same for all
+    // those phases.
     air
     {
         type            pureIsothermalPhaseModel;
 
-        diameterModel   velocityGroup;
-
-        velocityGroupCoeffs
+        diameterModel
         {
-            populationBalance    bubbles;
-
-            shapeModel           spherical;
-
-            sizeGroups
-            (
-                f1 { dSph 1e-3; }
-                f2 { dSph 2e-3; }
-                f3 { dSph 3e-3; }
-                f4 { dSph 4e-3; }
-                f5 { dSph 5e-3; }
-                ...
-            );
+            type            populationBalance;
+            populationBalance bubbles;
+            nGroups         5;
         }
 
         residualAlpha   1e-6;
     }
 
-    ...
-
-    populationBalanceCoeffs
+    // Settings for the water phase. This phase is continuous, so there is no
+    // diameter model.
+    water
     {
-        bubbles
+        type            pureIsothermalPhaseModel;
+
+        diameterModel   none;
+
+        residualAlpha   1e-6;
+    }
+
+    // Set the blending to 'continuous' so that only sub-models relating to the
+    // air_dispersedIn_water configuration are used
+    blending
+    {
+        default
         {
-            continuousPhase water;
-
-            coalescenceModels
-            (
-                LehrMilliesMewes{}
-            );
-
-            binaryBreakupModels
-            (
-                LehrMilliesMewes{}
-            );
-
-            breakupModels
-            ();
+            type            continuous;
+            phase           water;
         }
+    }
+
+    // Set the surface tension
+    surfaceTension
+    {
+        air_water
+        {
+            type            constant;
+            sigma           0.07;
+        }
+    }
+
+    // Settings for the bubbles population balance model
+    bubbles
+    {
+        // The continuous phase surrounding the bubbles is the water phase
+        continuousPhase water;
+
+        // Give the groups uniformly spaced diameters between 1 [mm] and 5 [mm]
+        sphericalDiameters
+        {
+            type            uniform;
+            min             1e-3;
+            max             5e-3;
+        }
+
+        // Define the bubbles to be spherical
+        shapeModel      spherical;
+
+        // Choose coalescence and breakup sub-models ...
+
+        coalescenceModel LehrMilliesMewes;
+
+        breakupModel    LehrMilliesMewes;
     }
     \endverbatim
 
 See also
-    Foam::PopulationBalancePhaseSystem
-    Foam::diameterModels::sizeGroup
-    Foam::diameterModels::velocityGroup
-    Foam::diameterModels::SecondaryPropertyModel
-    Foam::diameterModels::coalescenceModel
-    Foam::diameterModels::breakupModel
-    Foam::diameterModels::daughterSizeDistributionModel
-    Foam::diameterModels::binaryBreakupModel
-    Foam::functionObjects::sizeDistribution
-    Foam::functionObjects::moments
+    Foam::populationBalanceSystem
+    Foam::diameterModels::populationBalance
+    Foam::populationBalance::coalescenceModel
+    Foam::populationBalance::breakupModel
+    Foam::populationBalance::daughterSizeDistributionModel
+    Foam::functionObjects::populationBalanceSizeDistribution
+    Foam::functionObjects::populationBalanceSetSizeDistribution
+    Foam::functionObjects::populationBalanceMoments
 
 SourceFiles
     populationBalanceModel.C
@@ -190,7 +218,8 @@ SourceFiles
 #ifndef populationBalanceModel_H
 #define populationBalanceModel_H
 
-#include "sizeGroup.H"
+#include "daughterSizeDistributionModel.H"
+#include "populationBalance.H"
 #include "phaseSystem.H"
 #include "HashPtrTable.H"
 
@@ -202,12 +231,18 @@ namespace Foam
 class distribution;
 class phaseCompressibleMomentumTransportModel;
 
-namespace diameterModels
+namespace populationBalance
 {
+    class shapeModel;
+    class coalescenceModel;
+    class breakupModel;
 
-class coalescenceModel;
-class breakupModel;
-class binaryBreakupModel;
+    namespace breakupModels
+    {
+        class daughterSizeDistribution;
+        class binary;
+    }
+}
 
 /*---------------------------------------------------------------------------*\
                    Class populationBalanceModel Declaration
@@ -232,143 +267,6 @@ public:
             dmdtfTable;
 
 
-    // Public Classes
-
-        //- Class to accumulate population balance sub-class pointers
-        class groups
-        :
-            public regIOobject
-        {
-            // Private Data
-
-                //- Velocity group pointers
-                HashTable<const velocityGroup*> velocityGroupPtrs_;
-
-                //- Size group pointers
-                UPtrList<sizeGroup> sizeGroups_;
-
-
-            // Private Constructor
-
-                //- Construct with a name on a database
-                groups(const word& popBalName, const objectRegistry& db)
-                :
-                    regIOobject
-                    (
-                        IOobject
-                        (
-                            name(popBalName),
-                            db.time().constant(),
-                            db
-                        )
-                    )
-                {}
-
-
-            // Private Member Functions
-
-                //- Return the name of the pointer cache
-                static word name(const word& popBalName)
-                {
-                    return popBalName + ":groups";
-                }
-
-
-        public:
-
-            // Constructors
-
-                //- Lookup in the registry or construct new
-                static groups& New
-                (
-                    const word& popBalName,
-                    const objectRegistry& db
-                )
-                {
-                    if (db.foundObject<groups>(name(popBalName)))
-                    {
-                        return db.lookupObjectRef<groups>(name(popBalName));
-                    }
-
-                    groups* ps = new groups(popBalName, db);
-
-                    ps->store();
-
-                    return *ps;
-                }
-
-
-            // Member Functions
-
-                //- Return the current number of size groups
-                label nSizeGroups()
-                {
-                    return sizeGroups_.size();
-                }
-
-                //- Insert a velocity group into the table
-                void insert(velocityGroup& group)
-                {
-                    velocityGroupPtrs_.insert(group.phase().name(), &group);
-
-                    const label i0 = nSizeGroups();
-
-                    sizeGroups_.resize(i0 + group.sizeGroups().size());
-
-                    forAll(group.sizeGroups(), i)
-                    {
-                        sizeGroups_.set(i0 + i, &group.sizeGroups()[i]);
-
-                        if
-                        (
-                            i0 + i != 0
-                         && sizeGroups_[i0 + i - 1].x().value()
-                         >= sizeGroups_[i0 + i].x().value()
-                        )
-                        {
-                            FatalErrorInFunction
-                                << "Size groups must be specified in order of "
-                                << "their representative size"
-                                << exit(FatalError);
-                        }
-                    }
-                }
-
-                //- Retrieve the pointers
-                static void retrieve
-                (
-                    const populationBalanceModel& popBal,
-                    HashTable<const velocityGroup*>& velGroupPtrs,
-                    UPtrList<sizeGroup>& szGroupPtrs
-                )
-                {
-                    const objectRegistry& db = popBal.fluid().mesh();
-
-                    if (!db.foundObject<groups>(name(popBal.name())))
-                    {
-                        FatalErrorInFunction
-                            << "No velocity groups exist for population "
-                            << "balance \"" << popBal.name() << "\""
-                            << exit(FatalError);
-                    }
-
-                    groups& ps =
-                        db.lookupObjectRef<groups>(name(popBal.name()));
-
-                    velGroupPtrs.transfer(ps.velocityGroupPtrs_);
-                    szGroupPtrs.transfer(ps.sizeGroups_);
-
-                    ps.checkOut();
-                }
-
-                //- Dummy write for regIOobject
-                virtual bool writeData(Ostream&) const
-                {
-                    return true;
-                }
-        };
-
-
 private:
 
     // Private Data
@@ -385,17 +283,26 @@ private:
         //- Continuous phase
         const phaseModel& continuousPhase_;
 
-        //- Velocity groups belonging to this populationBalance
-        HashTable<const velocityGroup*> velocityGroupPtrs_;
+        //- The phase associated with each group
+        UPtrList<const phaseModel> phases_;
 
-        //- Size groups belonging to this populationBalance
-        UPtrList<sizeGroup> sizeGroups_;
+        //- A minimal list of the phases in this population balance
+        UPtrList<const phaseModel> uniquePhases_;
 
-        //- Size group boundaries
-        PtrList<dimensionedScalar> v_;
+        //- The diameter model associated with each group
+        UPtrList<const diameterModels::populationBalance> diameters_;
 
-        //- Section width required for binary breakup formulation
-        PtrList<PtrList<dimensionedScalar>> delta_;
+        //- A minimal list of the diameter models in this population balance
+        UPtrList<const diameterModels::populationBalance> uniqueDiameters_;
+
+        //- The group fractions
+        PtrList<volScalarField> fs_;
+
+        //- The representative spherical diameters of the groups
+        PtrList<dimensionedScalar> dSphs_;
+
+        //- The representative volumes of the groups
+        PtrList<dimensionedScalar> vs_;
 
         //- Explicit coalescence and breakup source terms
         PtrList<volScalarField::Internal> Su_;
@@ -418,28 +325,29 @@ private:
         //- Dilatation errors
         PtrList<volScalarField::Internal> dilatationErrors_;
 
-        //- Coalescence models
-        PtrList<coalescenceModel> coalescenceModels_;
+        //- The shape model
+        autoPtr<populationBalance::shapeModel> shapeModel_;
 
-        //- Coalescence rate
-        autoPtr<volScalarField::Internal> coalescenceRate_;
+        //- Coalescence model
+        autoPtr<populationBalance::coalescenceModel> coalescenceModel_;
 
-        //- Coalescence relevant size group pairs
+        //- Coalescence relevant group pairs
         List<labelPair> coalescencePairs_;
 
         //- Breakup models
-        PtrList<breakupModel> breakupModels_;
+        autoPtr<populationBalance::breakupModel> breakupModel_;
 
-        //- Breakup rate
-        autoPtr<volScalarField::Internal> breakupRate_;
+        //- Daughter size distribution breakup model
+        populationBalance::breakupModels::daughterSizeDistribution*
+            daughterSizeDistributionBreakupModel_;
 
-        //- Binary breakup models
-        PtrList<binaryBreakupModel> binaryBreakupModels_;
+        //- Binary breakup model
+        populationBalance::breakupModels::binary* binaryBreakupModel_;
 
-        //- Binary breakup rate
-        autoPtr<volScalarField::Internal> binaryBreakupRate_;
+        //- Section width required for binary breakup formulation
+        PtrList<PtrList<dimensionedScalar>> binaryBreakupDeltas_;
 
-        //- Binary breakup relevant size group pairs
+        //- Binary breakup relevant group pairs
         List<labelPair> binaryBreakupPairs_;
 
         //- Total void fraction
@@ -457,46 +365,90 @@ private:
 
     // Private Member Functions
 
-        const dictionary& coeffDict() const;
+        //- Get the coefficient dictionary
+        const dictionary& typeDict() const;
 
+        //- Do pre-calculations relating to coalescence and breakup
         void precomputeCoalescenceAndBreakup();
 
-        void birthByCoalescence(const label j, const label k);
+        //- Calculate particle creation by coalescence
+        void birthByCoalescence
+        (
+            const label j,
+            const label k,
+            const volScalarField::Internal& rate
+        );
 
-        void deathByCoalescence(const label i, const label j);
+        //- Calculate particle destruction by coalescence
+        void deathByCoalescence
+        (
+            const label i,
+            const label j,
+            const volScalarField::Internal& rate
+        );
 
-        void birthByBreakup(const label k, const label model);
+        //- Calculate particle creation by daughter-size-distribution-breakup
+        void birthByDaughterSizeDistributionBreakup
+        (
+            const label k,
+            const volScalarField::Internal& rate
+        );
 
-        void deathByBreakup(const label i);
+        //- Calculate particle destruction by daughter-size-distribution-breakup
+        void deathByDaughterSizeDistributionBreakup
+        (
+            const label i,
+            const volScalarField::Internal& rate
+        );
 
-        void birthByBinaryBreakup(const label i, const label j);
+        //- Calculate particle creation by binary-breakup
+        void birthByBinaryBreakup
+        (
+            const label i,
+            const label j,
+            const volScalarField::Internal& rate
+        );
 
-        void deathByBinaryBreakup(const label j, const label i);
+        //- Calculate particle destruction by binary-breakup
+        void deathByBinaryBreakup
+        (
+            const label j,
+            const label i,
+            const volScalarField::Internal& rate
+        );
 
+        //- Do calculations relating to coalescence and breakup
         void computeCoalescenceAndBreakup();
 
+        //- Do pre-calculations relating to expansion
         void precomputeExpansion();
 
+        //- Return the expansion sources for a group fraction, or (if flds is
+        //  valid) a secondary property
         Pair<tmp<volScalarField::Internal>> expansionSus
         (
             const label i,
-            const UPtrList<const volScalarField>& flds =
-                UPtrList<const volScalarField>()
+            const UPtrList<volScalarField>& flds = UPtrList<volScalarField>()
         ) const;
 
+        //- Do calculations relating to expansion
         void computeExpansion();
 
+        //- Do pre-calculations relating to model sources
         void precomputeModelSources();
 
+        //- Return the model sources for a group fraction, or (if flds is
+        //  valid) a secondary property
         Pair<tmp<volScalarField::Internal>> modelSourceRhoSus
         (
             const label i,
-            const UPtrList<const volScalarField>& flds =
-                UPtrList<const volScalarField>()
+            const UPtrList<volScalarField>& flds = UPtrList<volScalarField>()
         ) const;
 
+        //- Do calculations relating to model sources
         void computeModelSources();
 
+        //- Update the dilatation errors
         void computeDilatationErrors();
 
         //- Return whether the sources should be updated on this iteration
@@ -536,39 +488,32 @@ public:
     TypeName("populationBalanceModel");
 
 
+    // Static Member Functions
+
+        //- Return IO for a group-associated field
+        static IOobject groupFieldIo
+        (
+            const word& name,
+            const label i,
+            const phaseModel& phase,
+            const IOobject::readOption r = IOobject::NO_READ,
+            const IOobject::writeOption w = IOobject::NO_WRITE,
+            const bool registerObject = true
+        );
+
+        //- Read and return a group-associated field
+        static tmp<volScalarField> groupField
+        (
+            const word& name,
+            const label i,
+            const phaseModel& phase
+        );
+
+
     // Constructors
 
-        //- Construct for a fluid
+        //- Construct for a fluid and with a given name
         populationBalanceModel(const phaseSystem& fluid, const word& name);
-
-        //- Return clone
-        autoPtr<populationBalanceModel> clone() const;
-
-        //- Return a pointer to a new populationBalanceModel object created on
-        //  freestore from Istream
-        class iNew
-        {
-            const phaseSystem& fluid_;
-
-        public:
-
-            iNew(const phaseSystem& fluid)
-            :
-                fluid_(fluid)
-            {}
-
-            autoPtr<populationBalanceModel> operator()(Istream& is) const
-            {
-                const word name(is);
-
-                Info << "Setting up population balance: " << name << endl;
-
-                return autoPtr<populationBalanceModel>
-                (
-                    new populationBalanceModel(fluid_, name)
-                );
-            }
-        };
 
 
     //- Destructor
@@ -577,11 +522,65 @@ public:
 
     // Member Functions
 
-        //- Dummy write for regIOobject
-        bool writeData(Ostream&) const;
-
         //- Return reference to the phaseSystem
         inline const phaseSystem& fluid() const;
+
+        //- Return reference to the mesh
+        inline const fvMesh& mesh() const;
+
+        //- Return continuous phase
+        inline const phaseModel& continuousPhase() const;
+
+        //- Return the number of groups in the population balance
+        inline label nGroups() const;
+
+        //- Access the list of phases associated with each group
+        inline const UPtrList<const phaseModel>& phases() const;
+
+        //- Access the minimal list of the phases in this population balance
+        inline const UPtrList<const phaseModel>& uniquePhases() const;
+
+        //- Access the list of diameter models associated with each group
+        inline const UPtrList<const diameterModels::populationBalance>&
+            diameters() const;
+
+        //- Access the minimal list of the diameter models in this population
+        //  balance
+        inline const UPtrList<const diameterModels::populationBalance>&
+            uniqueDiameters() const;
+
+        //- Access the group fractions
+        inline const PtrList<volScalarField>& fs() const;
+
+        //- Modify the group fractions
+        inline PtrList<volScalarField>& fs();
+
+        //- Access a group fraction
+        inline const volScalarField& f(const label i) const;
+
+        //- Modify a group fraction
+        inline volScalarField& f(const label i);
+
+        //- Access the representative spherical diameters of the groups
+        inline const PtrList<dimensionedScalar>& dSphs() const;
+
+        //- Access the representative spherical diameters of a group
+        inline const dimensionedScalar& dSph(const label i) const;
+
+        //- Access the representative volumes diameters of the groups
+        inline const PtrList<dimensionedScalar>& vs() const;
+
+        //- Access the representative volumes diameters of a group
+        inline const dimensionedScalar& v(const label i) const;
+
+        //- Access the shape model
+        const populationBalance::shapeModel& shape() const;
+
+        //- Return the representative surface area of the group
+        tmp<volScalarField> a(const label i) const;
+
+        //- Return the representative diameter of the group
+        tmp<volScalarField> d(const label i) const;
 
         //- Return reference to the coalescence and breakup interfacial mass
         //  transfer rates
@@ -593,35 +592,23 @@ public:
         //- Return reference to the model source interfacial mass transfer rates
         inline const dmdtfTable& modelSourceDmdtfs() const;
 
-        //- Return reference to the mesh
-        inline const fvMesh& mesh() const;
-
         //- Return solution settings dictionary for this populationBalance
         inline const dictionary& solverDict() const;
 
         //- Solve on final pimple iteration only
         inline bool solveOnFinalIterOnly() const;
 
-        //- Return continuous phase
-        inline const phaseModel& continuousPhase() const;
-
-        //- Return the size groups belonging to this populationBalance
-        inline const UPtrList<sizeGroup>& sizeGroups() const;
-
-        //- Access the size groups belonging to this populationBalance
-        inline UPtrList<sizeGroup>& sizeGroups();
-
-        //- Return coalescence relevant size group pairs
+        //- Return coalescence relevant group pairs
         inline const List<labelPair>& coalescencePairs() const;
 
-        //- Return binary breakup relevant size group pairs
+        //- Return binary breakup relevant group pairs
         inline const List<labelPair>& binaryBreakupPairs() const;
 
         //- Return total void of phases belonging to this populationBalance
         inline const volScalarField& alphas() const;
 
         //- Return average velocity
-        inline const volVectorField& U() const;
+        inline tmp<volVectorField> U() const;
 
         //- Return the number allocation coefficient for a single volume
         dimensionedScalar eta(const label i, const dimensionedScalar& v) const;
@@ -644,7 +631,7 @@ public:
         ) const;
 
         //- Return the volume allocation coefficient for a given distribution
-        //  of diameters over a range of size-groups. The diameter distribution
+        //  of diameters over a range of groups. The diameter distribution
         //  should be volumetrically sampled (i.e., sampleQ should equal 3).
         dimensionedScalar etaV(const labelPair is, const distribution& d) const;
 
@@ -661,6 +648,10 @@ public:
             const phaseModel& dispersedPhase
         ) const;
 
+        //- Return the surface tension coefficient between a given group
+        //  and the continuous phase
+        const tmp<volScalarField> sigmaWithContinuousPhase(const label i) const;
+
         //- Return reference to momentumTransport model of the continuous phase
         const phaseCompressibleMomentumTransportModel&
             continuousTurbulence() const;
@@ -672,8 +663,7 @@ public:
         tmp<volScalarField::Internal> expansionSu
         (
             const label i,
-            const UPtrList<const volScalarField>& flds =
-                UPtrList<const volScalarField>()
+            const UPtrList<volScalarField>& flds = UPtrList<volScalarField>()
         ) const;
 
         //- Return the implicit expansion source term
@@ -683,8 +673,7 @@ public:
         tmp<volScalarField::Internal> modelSourceSu
         (
             const label i,
-            const UPtrList<const volScalarField>& flds =
-                UPtrList<const volScalarField>()
+            const UPtrList<volScalarField>& flds = UPtrList<volScalarField>()
         ) const;
 
         //- Solve the population balance equation
@@ -692,11 +681,13 @@ public:
 
         //- Correct derived quantities
         void correct();
+
+        //- Dummy write for regIOobject
+        bool writeData(Ostream&) const;
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace diameterModels
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

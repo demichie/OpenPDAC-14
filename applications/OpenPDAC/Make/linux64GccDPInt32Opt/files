@@ -1,0 +1,11 @@
+SOURCE += moveMesh.C
+SOURCE += momentumPredictor.C
+SOURCE += thermophysicalPredictor.C
+SOURCE += compressibilityEqns.C
+SOURCE += facePressureCorrector.C
+SOURCE += cellPressureCorrector.C
+SOURCE += pressureCorrector.C
+SOURCE += myHydrostaticInitialisation.C
+SOURCE += OpenPDAC.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACSolver

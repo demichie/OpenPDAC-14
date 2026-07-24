@@ -8,4 +8,4 @@ pressureCorrector.C
 myHydrostaticInitialisation.C
 OpenPDAC.C
 
-LIB = $(FOAM_USER_LIBBIN)/libOpenPDAC
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACSolver

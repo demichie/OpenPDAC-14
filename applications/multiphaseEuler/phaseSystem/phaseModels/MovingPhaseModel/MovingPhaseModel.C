@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2015-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2015-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -25,7 +25,10 @@ License
 
 #include "MovingPhaseModel.H"
 #include "phaseSystem.H"
-#include "fixedValueFvsPatchFields.H"
+#include "zeroFixedValueFvsPatchFields.H"
+#include "fixedValueFvPatchFields.H"
+#include "wallFvPatch.H"
+#include "noSlipFvPatchVectorField.H"
 #include "slipFvPatchFields.H"
 #include "partialSlipFvPatchFields.H"
 
@@ -68,13 +71,14 @@ Foam::MovingPhaseModel<BasePhaseModel>::phi(const volVectorField& U) const
                     IOobject::MUST_READ,
                     IOobject::AUTO_WRITE
                 ),
-                U.mesh()
+                U.mesh(),
+                dimensions::volumetricFlux
             )
         );
     }
     else
     {
-        Info<< "Calculating face flux field " << phiName << endl;
+        Info<< indentOrNl << "Calculating face flux field " << phiName << endl;
 
         wordList phiTypes
         (
@@ -110,6 +114,44 @@ Foam::MovingPhaseModel<BasePhaseModel>::phi(const volVectorField& U) const
 }
 
 
+template<class BasePhaseModel>
+Foam::wordList Foam::MovingPhaseModel<BasePhaseModel>::alphaPhiTypes
+(
+    const volVectorField& U
+) const
+{
+    wordList alphaPhiTypes
+    (
+        U.boundaryField().size(),
+        calculatedFvsPatchScalarField::typeName
+    );
+
+    forAll(U.boundaryField(), patchi)
+    {
+        const fvPatchVectorField& UPf = U.boundaryField()[patchi];
+
+        if
+        (
+            // Check for fixedValue with a value of 0 for backward compatibility
+            (
+                isType<fixedValueFvPatchVectorField>(UPf)
+             && gSum(UPf) == vector::zero
+            )
+            // Check for wall patch type
+         || isType<wallFvPatch>(this->mesh().boundary()[patchi])
+         || isA<noSlipFvPatchVectorField>(UPf)
+         || isA<slipFvPatchVectorField>(UPf)
+         || isA<partialSlipFvPatchVectorField>(UPf)
+        )
+        {
+            alphaPhiTypes[patchi] = zeroFixedValueFvsPatchScalarField::typeName;
+        }
+    }
+
+    return alphaPhiTypes;
+}
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class BasePhaseModel>
@@ -132,7 +174,8 @@ Foam::MovingPhaseModel<BasePhaseModel>::MovingPhaseModel
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        fluid.mesh()
+        fluid.mesh(),
+        dimensions::velocity
     ),
     phi_(phi(U_)),
     alphaPhi_
@@ -146,7 +189,8 @@ Foam::MovingPhaseModel<BasePhaseModel>::MovingPhaseModel
             IOobject::NO_WRITE
         ),
         fluid.mesh(),
-        dimensionedScalar(dimensionSet(0, 3, -1, 0, 0), 0)
+        dimensionedScalar(dimensionSet(0, 3, -1, 0, 0), 0),
+        alphaPhiTypes(U_)
     ),
     alphaRhoPhi_
     (
@@ -159,7 +203,8 @@ Foam::MovingPhaseModel<BasePhaseModel>::MovingPhaseModel
             IOobject::AUTO_WRITE
         ),
         fluid.mesh(),
-        dimensionedScalar(dimensionSet(1, 0, -1, 0, 0), 0)
+        dimensionedScalar(dimensionSet(1, 0, -1, 0, 0), 0),
+        alphaPhiTypes(U_)
     ),
     Uf_(nullptr),
     divU_(nullptr),

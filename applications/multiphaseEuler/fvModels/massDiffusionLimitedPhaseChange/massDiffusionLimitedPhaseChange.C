@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2024-2025 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2024-2026 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -69,7 +69,7 @@ void Foam::fv::massDiffusionLimitedPhaseChange::readCoeffs
     (
         sidedInterfaceCompositionModel::New
         (
-            interfaceCompositionDict,
+            modelSubDicts(interfaceCompositionDict),
             interface
         ).ptr()
     );
@@ -87,7 +87,7 @@ void Foam::fv::massDiffusionLimitedPhaseChange::readCoeffs
     (
         blendedSidedDiffusiveMassTransferModel::New
         (
-            diffusiveMassTransferDict,
+            blendedModelSubDicts(diffusiveMassTransferDict),
             interface,
             blendingDict<blendedSidedDiffusiveMassTransferModel>
             (
@@ -357,7 +357,7 @@ void Foam::fv::massDiffusionLimitedPhaseChange::addSup
     const label index = this->index(phaseNames(), alpha.group());
 
     const ThermoRefPair<multicomponentThermo>& mcThermos =
-        multicomponentThermos(true, false);
+        multicomponentThermos(false, false);
 
     const word specieName = heOrYi.member();
 
@@ -523,12 +523,7 @@ void Foam::fv::massDiffusionLimitedPhaseChange::correct()
         Ts_ -=
             (H1*(Ts_ - T1) + H2*(Ts_ - T2) + mDotL)
            /(max(H1 + H2 + mDotLPrime, HSmall));
-
-        Info<< indent << "min/mean/max Ts"
-            << " = " << gMin(Ts_.primitiveField())
-            << '/' << gAverage(Ts_.primitiveField())
-            << '/' << gMax(Ts_.primitiveField())
-            << endl;
+        infoField("Ts", Ts_);
 
         // Update the interface compositions
         forAll(phaseNames(), i)
@@ -578,12 +573,7 @@ void Foam::fv::massDiffusionLimitedPhaseChange::correct()
 
     // Correct the total phase change rate
     correctMDot();
-
-    Info<< indent << "min/mean/max mDot"
-        << " = " << gMin(mDot_.primitiveField())
-        << '/' << gAverage(mDot_.primitiveField())
-        << '/' << gMax(mDot_.primitiveField())
-        << endl;
+    infoField("mDot", mDot_);
 
     Info<< decrIndent;
 }

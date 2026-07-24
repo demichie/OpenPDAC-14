@@ -1,0 +1,4 @@
+SOURCE += derivedFvPatchFields/multiphaseCoupledTemperature/multiphaseCoupledTemperatureFvPatchScalarField.C
+SOURCE += derivedFvPatchFields/multiphaseExternalTemperature/multiphaseExternalTemperatureFvPatchScalarField.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACThermophysicalTransportModels
