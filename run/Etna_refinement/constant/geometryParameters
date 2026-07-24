@@ -1,0 +1,29 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  |                    File: geometryParameters                        |
+  |                                                                    |
+  |  Description: Shared parameters for mesh generation and setup.     |
+\*---------------------------------------------------------------------------*/
+
+convertToMeters 1.0;
+
+// Atmospheric domain parameters
+atm_top_z           2500.0;   // Vertical extension of the atmospheric domain in meters
+atm_x_neg           -1000.0;  // Horizontal extension of the left part of atmospheric domain in meters
+atm_x_pos           3000.0;   // Horizontal extension of the right part of atmospheric domain in meters
+atm_y_neg           -1500.0;  // Horizontal extension of the back part of atmospheric domain in meters
+atm_y_pos           2500.0;   // Horizontal extension of the front part of atmospheric domain in meters
+
+// number of layers in the atmosphere
+n_vert_layers       4;        
+
+// horizontal cell size at the top of the atmopshere block
+hor_cell_size_topo  30.0;   
+
+// vertical-size ratio between consecutive cells
+// decresing this value increases the thickness of layers 
+dz_ratio 1.1;   
+
+// Atmospheric layers parameters
+atmCells_aspect_ratio_bottom List<scalar> (1.0 1.0 1.0 1.0);
+atmCells_aspect_ratio_top   List<scalar> (2.0 2.0 2.0 1.0);
+

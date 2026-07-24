@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format          ascii;
+    class           dictionary;
+    location        "system";
+    object          functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// #includeFunc residuals(p_rgh, h.particles, h.gas)
+
+/*
+writeFields
+{
+    type        writeObjects;
+    libs        ("libutilityFunctionObjects.so");
+    objects
+    (
+        alpha.particles
+    );
+
+    writeControl    adjustableRunTime;
+    writeInterval   0.1;
+}
+*/
+
+gradAlpha
+{
+    type            grad;
+    libs            ("libfieldFunctionObjects.so");
+    field           alpha.particles;
+    executeControl  timeStep;
+    writeControl    none;
+}
+
+magGradAlpha
+{
+    type            mag;
+    libs            ("libfieldFunctionObjects.so");
+    field           grad(alpha.particles);
+    result          magGradAlpha;
+    executeControl  timeStep;
+    writeControl    adjustableRunTime;
+    writeInterval   0.5;    
+}
+
+
+/*
+#include "cutPlane"
+#include "sampleSurface"
+#include "isoSurfaces"
+#include "sampleSurfaceAlpha"
+#include "sampleLagrangian"
+*/
+
+// ************************************************************************* //

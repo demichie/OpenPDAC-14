@@ -1,0 +1,35 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      fvModels;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+massSource
+{
+    type            massSource;
+
+    phase           particles;
+
+    cellZone        particle_source;
+
+    massFlowRate
+    {
+        type            scale;
+        scale           squarePulse;
+        start           0.0;
+        duration        4.0;
+        value           1e+8;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  11
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+
+terrain_out
+{
+    type            surfaces;
+    libs            ("libsampling.so");
+    // writeControl    writeTime;
+    writeControl    adjustableRunTime;
+    writeInterval   0.5;
+    
+    surfaceFormat   vtk;
+    writeFormat     binary;
+    fields          (U.gas U.particles U p T.particles rho alpha.particles);
+
+    interpolationScheme cellPoint;
+
+    surfaces
+    (
+        terrain
+        {
+            type        patch;
+            patches     (terrain);
+            interpolate true;
+        }
+        terrain_1m
+        {
+            type        patchInternalField;
+            offset      (0 0 1);
+            patches     (terrain);
+            interpolate true;
+        }
+    );
+
+}
+
+
+// ************************************************************************* //
