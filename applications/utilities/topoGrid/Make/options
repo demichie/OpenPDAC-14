@@ -1,0 +1,11 @@
+EXE_INC = \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/mesh/snappyHexMesh/lnInclude \
+    -I$(LIB_SRC)/meshCheck/lnInclude
+    
+EXE_LIBS = \
+    -lfiniteVolume \
+    -lgenericPatches \
+    -lmeshCheck \
+    -lmeshTools

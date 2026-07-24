@@ -1,0 +1,80 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      phaseProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+phases (particles1 particles2 air);
+
+continuousPhase air;
+
+referencePhase air;
+
+particles1
+{
+    type          pureIsothermalPhaseModel;
+
+    diameterModel constant;
+    constantCoeffs
+    {
+        d               1.5e-3;
+    }
+
+    alphaMax        0.62;
+    residualAlpha   1e-9;
+}
+
+particles2
+{
+    type          pureIsothermalPhaseModel;
+
+    diameterModel constant;
+    constantCoeffs
+    {
+        d               2.5e-3;
+    }
+
+    alphaMax        0.62;
+    residualAlpha   1e-9;
+}
+
+
+air
+{
+    type          pureIsothermalPhaseModel;
+
+    diameterModel none;
+
+    residualAlpha   1e-6;
+}
+
+blending
+{
+    default
+    {
+        type            continuous;
+        phase           air;
+    }
+}
+
+surfaceTension
+{}
+
+kineticProperties
+{
+    radialModel         SinclairJackson;
+    alphaMinFriction    0.55;
+    alphasThreshold     1e-3;
+}
+
+// ************************************************************************* //

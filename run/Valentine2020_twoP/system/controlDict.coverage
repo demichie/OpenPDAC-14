@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  3.0.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     foamRun;
+
+solver          OpenPDAC;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+/*
+ * Coverage-specific short run.
+ * A final time of 0.01 s keeps the run short enough for CI while still
+ * exercising part of the solver logic for line-coverage collection.
+ */
+endTime         0.01;
+
+deltaT          0.001;
+
+writeControl    adjustableRunTime;
+
+/*
+ * Write once at the end of the short run.
+ */
+writeInterval   0.01;
+
+/*
+ * Keep only one time directory to reduce disk usage in CI.
+ */
+purgeWrite      1;
+
+writeFormat     binary;
+
+writePrecision  12;
+
+writeCompression uncompressed;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+
+maxCo           0.5;
+
+maxDeltaT       1;
+
+// ************************************************************************* //

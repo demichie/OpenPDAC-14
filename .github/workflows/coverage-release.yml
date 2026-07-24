@@ -1,0 +1,133 @@
+name: Release Coverage Report
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Test OpenPDAC-13
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to analyze (release tag like 1.2.0, or a branch name)"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release-coverage-pages
+  cancel-in-progress: false
+
+jobs:
+  build-coverage:
+    if: >
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine target ref and version
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REFNAME="${{ inputs.ref }}"
+          else
+            REFNAME="${{ github.event.workflow_run.head_branch }}"
+          fi
+
+          echo "refname=$REFNAME" >> "$GITHUB_OUTPUT"
+
+          if echo "$REFNAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "is_release_tag=true" >> "$GITHUB_OUTPUT"
+            echo "version=$REFNAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release_tag=false" >> "$GITHUB_OUTPUT"
+            echo "version=$REFNAME" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.check.outputs.refname }}
+
+      - name: Install system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
+          sudo add-apt-repository http://dl.openfoam.org/ubuntu
+          sudo apt-get update
+          sudo apt-get -y install openfoam13 wget lcov
+
+      - name: Install Miniconda and create environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p "$HOME/miniconda"
+          source "$HOME/miniconda/bin/activate"
+          conda init bash
+          conda env create -f environment.yml
+
+      - name: Inject coverage flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd applications/OpenPDAC
+
+          find . -name "options" -type f | while read -r f; do
+            echo "Patching $f"
+            printf '\nEXE_INC += -O0 -fprofile-arcs -ftest-coverage\nLIB_LIBS += -fprofile-arcs -ftest-coverage\nEXE_LIBS += -fprofile-arcs -ftest-coverage\n' >> "$f"
+            echo "---- tail of $f ----"
+            tail -n 8 "$f"
+          done
+
+      - name: Build with coverage instrumentation
+        run: |
+          bash -ic '
+            set +m
+            
+            conda activate OpenPDACconda
+            
+            source /opt/openfoam13/etc/bashrc
+            
+            echo "Compiling OpenPDAC solver..."
+            cd applications/OpenPDAC
+            ./Allwmake
+            cd ../../applications/utilities/topoGrid
+            wmake
+          '
+
+      - name: Run Valentine2020_twoP coverage
+        shell: bash
+        run: |
+          bash -ic '
+            set +m
+
+            conda activate OpenPDACconda
+            source /opt/openfoam13/etc/bashrc
+
+            cd run/Valentine2020_twoP
+            chmod +x ./run_coverage_Valentine2020_twoP.sh
+            COVERAGE_ROOT=$(pwd)/coverage PROJECT_ROOT=$(cd ../.. && pwd) COVERAGE_DIR=$(cd ../.. && pwd)/applications/OpenPDAC ./run_coverage_Valentine2020_twoP.sh
+          '
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ steps.check.outputs.version }}
+          path: |
+            run/Valentine2020_twoP/coverage/coverage_clean.info
+            run/Valentine2020_twoP/coverage/html
+          if-no-files-found: error

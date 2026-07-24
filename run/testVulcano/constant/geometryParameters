@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  |                    File: geometryParameters                        |
+  |                                                                    |
+  |  Description: Shared parameters for mesh generation and setup.     |
+\*---------------------------------------------------------------------------*/
+
+convertToMeters 1.0;
+
+// Crater parameters
+r_crater_top 10; // Radius of crater top in meters
+r_crater_base 10; // Radius of conduit in meters
+h_crater 100; // Length of crater in meters
+dx_crater_base      0.0;
+dy_crater_base      0.0;
+
+// Conduit parameters
+h_conduit           0.0;      // Length of conduit in meters (0-> no conduit)
+r_conduit_base      10;    // Radius of the conduit base in meters
+dx_conduit_base     0.0;
+dy_conduit_base     0.0;
+
+// Atmospheric domain parameters
+atm_top_z           2500.0;   // Vertical extension of the atmospheric domain in meters
+atm_x_pos           1000.0;   // Horizontal extension of the right part of atmospheric domain in meters
+atm_y_pos           1500.0;   // Horizontal extension of the front part of atmospheric domain in meters
+atm_y_neg           -1500.0;  // Horizontal extension of the back part of atmospheric domain in meters
+atm_x_neg           -2000.0;  // Horizontal extension of the left part of atmospheric domain in meters
+
+hor_cell_size_topo  10;   // horizontal cell size on the topography (far from the crater)
+
+crater_cell_size   5;    // gorizontal cell size at the top of the crater
+
+dz_ratio 1.2;    // vertical-size ratio between consecutive cells
+
+// Atmospheric layers parameters
+n_vert_layers       4;        // number of layers in the atmosphere
+
+// vertical to horizontal aspect ratio of cells at the bottom of each layer
+// for the first layer the horizontal size is that of the crater
+atmCells_aspect_ratio_bottom List<scalar> (1.5 1.0 1.0 1.0);
+
+// vertical to horizontal aspect ratio of cells at the top of each layer
+atmCells_aspect_ratio_top   List<scalar> (2.0 2.0 2.0 1.0);
+
+// Desired Icyl-to-Mid transition distance; internally quantized to a cell index compatible with all atmospheric layers.
+outerStraightEdgeDistance 350;
+
+
+// 1 = uniform split for outer edges at top of inner layers
+// 2 = uniform split for outer edges at bottom of inner layers
+// 3 = weighted averege of the previous two options 
+outerSplitStrategy 3;
+
+// only used when  outerSplitStrategy = 3
+// 0.5 = arithmetic average
+outerSplitWeight 0.5;
+
+// factor for inner region enlargment from bottom to top of each layer
+exp_fact          1.8;
+
+// Fixed parameters
+crater_top_z        0.0;      // elevation of the crater top in the block mesh
+

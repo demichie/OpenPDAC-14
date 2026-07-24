@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# =============================================================================
+# Allrun - Script to execute the full simulation ensemble generation workflow.
+#
+# This script automates the two-step process:
+# 1. Runs the parameter sampling script to generate 'samples.csv' and plots.
+# 2. Runs the ensemble generation script to create the simulation directories.
+#
+# The script will exit immediately if any command fails.
+# =============================================================================
+
+# --- Configuration ---
+# Define the names of your Python scripts and template directory here.
+SAMPLING_SCRIPT="sampling_script.py"
+ENSEMBLE_SCRIPT="generate_ensemble.py"
+TEMPLATE_DIR="templatedir"
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# --- Start Execution ---
+echo "========================================="
+echo "Starting Ensemble Generation Workflow"
+echo "========================================="
+
+# --- Pre-run Checks ---
+# Verify that the necessary scripts and directories exist before starting.
+echo "--> Performing pre-run checks..."
+if [ ! -f "$SAMPLING_SCRIPT" ]; then
+    echo "Error: Sampling script '$SAMPLING_SCRIPT' not found."
+    exit 1
+fi
+if [ ! -f "$ENSEMBLE_SCRIPT" ]; then
+    echo "Error: Ensemble script '$ENSEMBLE_SCRIPT' not found."
+    exit 1
+fi
+if [ ! -d "$TEMPLATE_DIR" ]; then
+    echo "Error: Template directory '$TEMPLATE_DIR' not found."
+    echo "Please create it and populate it with your template files."
+    exit 1
+fi
+echo "    Checks passed. All required files are present."
+
+# --- Step 1: Run Sampling Script ---
+echo
+echo "--- Step 1: Running Parameter Sampling ---"
+python3 "$SAMPLING_SCRIPT" > log.sampling
+echo "--- Sampling finished successfully. ---"
+
+
+# --- Step 2: Run Ensemble Generation Script ---
+echo
+echo "--- Step 2: Generating Ensemble Directories ---"
+python3 "$ENSEMBLE_SCRIPT" > log.folderCreation
+echo "--- Ensemble generation finished successfully. ---"
+
+
+echo
+echo "========================================="
+echo "Workflow Complete."
+echo "========================================="

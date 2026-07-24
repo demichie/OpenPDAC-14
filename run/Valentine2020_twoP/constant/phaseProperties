@@ -1,0 +1,90 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      phaseProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+phases (particles1 particles2 air);
+
+continuousPhase air;
+
+referencePhase air;
+
+particles1
+{
+    type          purePhaseModel;
+
+    diameterModel constant;
+    constantCoeffs
+    {
+        d               1e-4;
+    }
+
+    alphaMax        0.62;
+    residualAlpha   1e-8;
+}
+
+particles2
+{
+    type          purePhaseModel;
+
+    diameterModel constant;
+    constantCoeffs
+    {
+        d               1e-2;
+    }
+
+    alphaMax        0.62;
+    residualAlpha   1e-8;
+}
+
+
+air
+{
+    type          purePhaseModel;
+
+    diameterModel none;
+
+    residualAlpha   0;
+}
+
+blending
+{
+    default
+    {
+        type            continuous;
+        phase           air;
+    }
+    drag
+    {
+        type            linear;
+        minFullyContinuousAlpha.air 0.2;
+        minPartlyContinuousAlpha.air 0.1;
+        minFullyContinuousAlpha.particles1 none;
+        minPartlyContinuousAlpha.particles1 none;
+        minFullyContinuousAlpha.particles2 none;
+        minPartlyContinuousAlpha.particles2 none;
+    }
+}
+
+kineticProperties
+{
+    radialModel         CarnahanStarling;
+    alphaMinFriction    0.5;
+    alphasThreshold     1e-3;
+}
+
+surfaceTension
+{}
+
+// ************************************************************************* //

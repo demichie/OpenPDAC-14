@@ -1,0 +1,6 @@
+phaseForces/phaseForces.C
+phaseMap/phaseMap.C
+
+cloudDetails/cloudDetails.C
+
+LIB = $(FOAM_USER_LIBBIN)/libOpenPDACFunctionObjects

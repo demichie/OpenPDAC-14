@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# =============================================================================
+# Allrun - Script to execute the full simulation ensemble generation workflow.
+#
+# This script automates the two-step process:
+# 1. Runs the parameter sampling script to generate 'samples.csv' and plots.
+# 2. Runs the ensemble generation script to create the simulation directories.
+#
+# The script will exit immediately if any command fails.
+# =============================================================================
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# --- Start Execution ---
+echo "========================================="
+echo "Starting Ensemble Analysis Workflow"
+echo "========================================="
+
+# --- Step 1: Run Simulations of the Ensemble  ---
+echo
+echo "--- Step 1: Run all the simulations ---"
+./submit_allNEW.sh > log.ensembleRun
+echo "--- Ensemble run successfully. ---"
+
+
+# --- Step 2: Collect the output from Folders  ---
+echo
+echo "--- Step 2: Collect all the outputs ---"
+python3 collect_results.py > log.collectResults
+echo "--- Output data collected successfully. ---"
+
+
+# --- Step 3: Sensitivity Analysis  ---
+echo
+echo "--- Step 3: Perform sensitivty analysis ---"
+python3 sensitivity_analysis.py > log.sensitivtyAnalysis
+echo "--- Analysis finished succesfully.  ---"
+
+
+echo
+echo "========================================="
+echo "Workflow Complete."
+echo "========================================="

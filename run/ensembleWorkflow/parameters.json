@@ -1,0 +1,14 @@
+[
+    {
+        "name": "lidVelocity",
+        "type": "continuous",
+        "distribution": "linear",
+        "range": [0.1, 2.0]
+    },
+    {
+        "name": "kinematicViscosity",
+        "type": "continuous",
+        "distribution": "log",
+        "range": [1e-5, 1e-3]
+    }
+]

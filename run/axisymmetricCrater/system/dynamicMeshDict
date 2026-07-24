@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      dynamicMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+topoChanger
+{
+    type            refiner;
+
+    libs            ("libfvMeshTopoChangers.so");
+
+    mover           none;
+
+    // How often to refine
+    refineInterval  5;
+
+    // Field to be refinement on
+    // field           alpha.particles;
+    field           magGradAlpha;
+
+    // Refine field in between lower..upper
+    lowerRefineLevel 0.000001;
+    upperRefineLevel 10.0;
+
+    // Have slower than 2:1 refinement
+    nBufferLayers   2;
+
+    // Refine cells only up to maxRefinement levels
+    maxRefinement   1;
+
+    // Stop refinement if maxCells reached
+    maxCells        200000;
+
+    // Write the refinement level as a volScalarField
+    dumpLevel       true;
+}
+
+
+// ************************************************************************* //

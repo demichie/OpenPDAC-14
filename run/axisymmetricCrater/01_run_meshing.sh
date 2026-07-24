@@ -1,0 +1,102 @@
+#!/bin/sh
+
+# =============================================================================
+# Script 1: Mesh Generation
+# -----------------------------------------------------------------------------
+# This script performs all meshing operations:
+#   - Cleans the case
+#   - Creates a base mesh with blockMesh
+#   - Decomposes the domain for parallel processing
+#   - Modifies and deforms the mesh using topoSet and topoGrid
+#
+# After running, you can inspect the mesh quality and view it in ParaView.
+#
+# Usage: ./01_run_meshing.sh [DEM_ASC_FILE]
+# Example: ./01_run_meshing.sh dsm_vulc_5m.asc
+# =============================================================================
+
+# Change to the script's directory for robust execution
+cd "${0%/*}" || exit 1
+
+# Source the OpenFOAM functions for running applications
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# =========================================================================
+# Activate Conda environment for Python script execution
+# =========================================================================
+#echo "--> Activating Conda environment: OpenPDACconda"
+
+# Source Conda's shell functions. This is necessary for 'conda activate' to work in scripts.
+# The `conda info --base` command robustly finds your conda installation.
+#source "$(conda info --base)/etc/profile.d/conda.sh"
+
+# Activate the specific environment
+#conda activate OpenPDACconda
+
+# --- MESHING ---
+
+# Name of the ASCII DEM file used by smoothCraterArea.py.
+# If not provided, keep the previous default.
+#INPUT_ASC="${1:-dsm_vulc_5m.asc}"
+
+echo "--> Cleaning The Case from previous runs..."
+# Use the Allclean script to ensure a fresh start
+./Allclean
+touch case.foam
+
+#echo "--> Running Python script for geometry preparation with DEM: ${INPUT_ASC}"
+#if ! python3 smoothCraterArea.py "${INPUT_ASC}" > log.smoothCreaterArea; then
+#    echo "ERROR: smoothCraterArea.py failed. Check that the DEM file exists in ./constant/DEM/ or pass a valid path." >&2
+#    conda deactivate
+#    exit 1
+#fi
+
+echo "--> Copying controlDict..."
+cp ./system/controlDict.init ./system/controlDict
+
+echo "--> Creating the base mesh with blockMesh..." ; sleep 2
+runApplication blockMesh
+
+runApplication extrudeMesh
+
+echo "--> Setting up initial conditions from 'org.0' directory..."
+rm -rf 0
+cp -r org.0 0
+
+#echo "--> Decomposing the domain for parallel execution..."
+#runApplication decomposePar
+
+#echo "--> Performing initial mesh quality check in parallel..."
+#runParallel checkMesh -allGeometry -allTopology -writeSets
+
+#mv log.checkMesh log.checkMesh0
+
+echo "--> Defining mesh zones with createZones..."
+runApplication createZones
+
+echo "--> Deforming the mesh with topoGrid..."
+runApplication topoGrid
+
+#echo "--> Setting initial fields (e.g., alpha.particles) with  setFields..."
+#runApplication setFields
+
+
+echo "--> Performing final mesh quality check on the deformed mesh..."
+runApplication checkMesh -allGeometry -allTopology -writeSets
+
+# =========================================================================
+# Deactivate the Conda environment
+# =========================================================================
+#conda deactivate
+#echo "--> Conda environment deactivated."
+# =========================================================================
+
+# -----------------------------------------------------------------------------
+echo
+echo "MESHING SCRIPT COMPLETE."
+echo "The mesh has been generated in the processor* directories."
+echo "To view the decomposed mesh, open ParaView and open the case by selecting"
+echo "the file with the '.foam' extension (e.g., case.foam)."
+echo "Next, run ./02_run_fieldInitialization.sh"
+echo ""
+# =============================================================================

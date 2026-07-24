@@ -1,0 +1,50 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+runApplication blockMesh
+runApplication foamRun
+
+results_file="./postProcessing/volFieldValue1/0/volFieldValue.dat"
+
+# Check if the results file actually exists before trying to read it.
+if [ ! -f "$results_file" ]; then
+    echo "Error: Results file not found at '$results_file'"
+    echo "Creating a placeholder CSV with NaN values to prevent workflow failure."
+    
+    # Write a CSV with the correct headers but NaN values.
+    echo "final_max_pressure,final_max_velocity_mag" > output.csv
+    echo "NaN,NaN" >> output.csv
+    
+    # Exit with an error code.
+    exit 1
+fi
+
+# Extract the LAST line from the data file using the 'tail' command.
+# 'tail -n 1' reads the final line of any given file.
+last_line=$(tail -n 1 "$results_file")
+
+# Use 'awk' to parse the last line and grab the values from the
+# second ('$2') and third ('$3') columns.
+final_max_pressure=$(echo "$last_line" | awk '{print $2}')
+final_max_velocity_mag=$(echo "$last_line" | awk '{print $3}')
+
+
+# --- 3. Write the output.csv File ---
+# This file will be read by the aggregation script later.
+
+# First, write the header row. The column names should be descriptive.
+echo "final_max_pressure,final_max_velocity_mag" > output.csv
+
+# Next, append a single row containing the extracted final values, separated by a comma.
+echo "$final_max_pressure,$final_max_velocity_mag" >> output.csv
+
+
+# --- 4. Final Log Message ---
+# Provide feedback in the console to confirm the script ran successfully.
+echo "Extraction complete."
+echo "  - Final Max Pressure: $final_max_pressure"
+echo "  - Final Max Velocity Magnitude: $final_max_velocity_mag"
+echo "Results have been written to output.csv"

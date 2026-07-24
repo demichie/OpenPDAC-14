@@ -1,0 +1,442 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | 2D section generated from 3D blockMeshDict logic
+    \\  /    A nd           |
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object blockMeshDict;
+}
+
+#include "../constant/geometryParameters"
+
+#codeStream
+{
+codeInclude
+#{
+#include "scalarList.H"
+#include "labelList.H"
+#};
+
+code
+#{
+    const bool halfMode = true;
+    const label Ny = 10; // <--- Set number of cells in Y direction here
+
+    const Foam::scalarList& atmCells_aspect_ratio_bottom =
+        dict.lookup("atmCells_aspect_ratio_bottom");
+    const Foam::scalarList& atmCells_aspect_ratio_top =
+        dict.lookup("atmCells_aspect_ratio_top");
+
+    const label n_vert_layers = readLabel(dict.lookup("n_vert_layers"));
+    const scalar dz_ratio = readScalar(dict.lookup("dz_ratio"));
+    const scalar crater_cell_size = readScalar(dict.lookup("crater_cell_size"));
+    const scalar hor_cell_size_topo = readScalar(dict.lookup("hor_cell_size_topo"));
+    const scalar atm_top_z = readScalar(dict.lookup("atm_top_z"));
+    const scalar h_conduit = readScalar(dict.lookup("h_conduit"));
+    const scalar h_crater = readScalar(dict.lookup("h_crater"));
+    const scalar r_conduit_base = readScalar(dict.lookup("r_conduit_base"));
+    const scalar r_crater_base = readScalar(dict.lookup("r_crater_base"));
+    const scalar r_crater_top_param = readScalar(dict.lookup("r_crater_top"));
+    const scalar crater_top_z = readScalar(dict.lookup("crater_top_z"));
+    const scalar exp_fact = readScalar(dict.lookup("exp_fact"));
+    const scalar atm_x_neg = readScalar(dict.lookup("atm_x_neg"));
+    const scalar atm_x_pos = readScalar(dict.lookup("atm_x_pos"));
+    const scalar atm_y_neg = readScalar(dict.lookup("atm_y_neg"));
+    const scalar atm_y_pos = readScalar(dict.lookup("atm_y_pos"));
+
+    List<scalar> layer_fraction(n_vert_layers + 1, 0.0);
+    layer_fraction[n_vert_layers] = 1.0;
+
+    scalar delta_z(dz_ratio);
+    scalar c_bottom = atmCells_aspect_ratio_bottom[0];
+    scalar c_top = atmCells_aspect_ratio_top[0];
+    scalar dz_bottom = crater_cell_size * c_bottom;
+    scalar dz_top = hor_cell_size_topo * c_top;
+    scalar zlayer_rel = 0.0;
+
+    for (label layer = 0; layer <= n_vert_layers-2; ++layer)
+    {
+        label N = round(Foam::log(dz_top/dz_bottom) / Foam::log(delta_z));
+        scalar z_layer = dz_bottom * (1.0 - pow(delta_z, N+1)) / (1.0 - delta_z);
+        zlayer_rel += z_layer/atm_top_z;
+        layer_fraction[layer+1] = zlayer_rel;
+
+        c_top = atmCells_aspect_ratio_top[layer];
+        c_bottom = atmCells_aspect_ratio_bottom[layer];
+        dz_bottom = hor_cell_size_topo * pow(2.0, layer+1) * c_bottom;
+        dz_top = hor_cell_size_topo * pow(2.0, layer+1) * c_top;
+    }
+
+    auto calculateGradingCells =
+        [&](scalar totalLength, scalar cellSizeStart, scalar cellSizeEnd,
+            label& nCells, scalar& grading, label maxIter = 50,
+            scalar tolerance = 1e-4) -> void
+    {
+        nCells = 0;
+        grading = 1.0;
+        if (totalLength < 1e-9) return;
+        if (cellSizeStart < 1e-9 || cellSizeEnd < 1e-9)
+        {
+            nCells = 1; grading = 1.0; return;
+        }
+        if (Foam::mag(cellSizeEnd - cellSizeStart) < 1e-9 * cellSizeStart)
+        {
+            nCells = Foam::max(1, label(round(totalLength / cellSizeStart)));
+            grading = 1.0; return;
+        }
+        scalar r = cellSizeEnd / cellSizeStart;
+        scalar K = totalLength / cellSizeStart;
+        if (r <= 1.0 + 1e-6 || K <= 1.0 + 1e-6)
+        {
+            nCells = Foam::max(1, label(round(totalLength / cellSizeStart)));
+            grading = 1.0; return;
+        }
+        scalar n0 = Foam::max(1.0 + tolerance, K / r);
+        scalar n2 = K;
+        auto calculateF = [&](scalar n_val) -> scalar
+        {
+            if (n_val <= 1.0 + 1e-6) return -K;
+            scalar rn = pow(r, n_val/(n_val - 1.0));
+            scalar r1 = pow(r, 1.0/(n_val - 1.0));
+            if (Foam::mag(r1 - 1.0) < 1e-9) return -K;
+            return (rn - 1.0)/(r1 - 1.0) - K;
+        };
+        scalar f0 = calculateF(n0);
+        scalar n1 = 0.5*(n0 + n2);
+        scalar f1 = calculateF(n1);
+        label iter = 0;
+        while (Foam::mag(n2 - n0) > tolerance && iter < maxIter)
+        {
+            iter++;
+            if (f0*f1 < 0) n2 = n1;
+            else { n0 = n1; f0 = f1; }
+            n1 = 0.5*(n0 + n2);
+            f1 = calculateF(n1);
+        }
+        nCells = Foam::max(1, label(round(n1)));
+        grading = (nCells <= 1) ? 1.0 : r;
+    };
+
+    struct RingParams
+    {
+        scalar R_icyl;
+        scalar grading;
+    };
+
+    auto solveRingParameters = [&](scalar R_inner, scalar d_start, label N_ring,
+                                   scalar L_far_field, label N_outer) -> RingParams
+    {
+        scalar r_low = 0.5;
+        scalar r_high = 2.0;
+        scalar r_sol = 1.0;
+        scalar tolerance = 1e-5*d_start;
+        int max_iter = 100;
+        for (int iter = 0; iter < max_iter; ++iter)
+        {
+            scalar r = 0.5*(r_low + r_high);
+            scalar ring_width;
+            scalar d_end_ring;
+            if (Foam::mag(r - 1.0) < 1e-6)
+            {
+                ring_width = d_start*N_ring;
+                d_end_ring = d_start;
+            }
+            else
+            {
+                ring_width = d_start*(pow(r, N_ring) - 1.0)/(r - 1.0);
+                d_end_ring = d_start*pow(r, N_ring - 1);
+            }
+            scalar R_curr = R_inner + ring_width;
+            scalar space_remaining = L_far_field - R_curr;
+            if (space_remaining < 1e-3*L_far_field)
+            {
+                r_high = r; continue;
+            }
+            scalar d_start_outer = space_remaining / N_outer;
+            scalar error = d_end_ring - d_start_outer;
+            if (Foam::mag(error) < tolerance)
+            {
+                r_sol = r; break;
+            }
+            if (error > 0) r_high = r;
+            else r_low = r;
+            r_sol = r;
+        }
+        scalar final_width;
+        if (Foam::mag(r_sol - 1.0) < 1e-6) final_width = d_start*N_ring;
+        else final_width = d_start*(pow(r_sol, N_ring) - 1.0)/(r_sol - 1.0);
+        scalar final_grading = pow(r_sol, N_ring - 1);
+        return RingParams{R_inner + final_width, final_grading};
+    };
+
+    int n_mult = pow(2, n_vert_layers - 1);
+    scalar hor_cell_size_top_atm(hor_cell_size_topo * n_mult);
+    scalar conduit_base_z = -1.0*(h_conduit + h_crater);
+    scalar crater_base_z = -1.0*h_crater;
+    scalar r_cond_base = r_conduit_base;
+    scalar r_cr_base = r_crater_base;
+    scalar r_cr_top = r_crater_top_param;
+
+    scalar n_crater = label(round((0.5*r_crater_top_param)/(crater_cell_size)));
+    scalar actual_crater_top_size = 0.5*r_crater_top_param/n_crater;
+
+    scalar l0_cyl = hor_cell_size_topo*n_crater;
+    scalar l_cyl = l0_cyl/sin(degToRad(67.5));
+    scalar cyl_rad_base = l_cyl/(2.0*cos(degToRad(67.5)));
+    scalar ring_width_const = cyl_rad_base - r_crater_top_param;
+
+    label n_rad_gr_interface;
+    scalar rad_gr_val;
+    scalar drRatio = hor_cell_size_topo/actual_crater_top_size;
+
+    label n0 = 1;
+    scalar alfa0 = pow(drRatio, 1.0/(n0 + 1.0));
+    scalar drTot0 = sqrt(actual_crater_top_size*hor_cell_size_topo);
+    label n2 = ceil(ring_width_const/actual_crater_top_size);
+    scalar alfa2 = pow(drRatio, 1.0/(n2 + 1.0));
+    scalar drTot2 = actual_crater_top_size*(alfa2 - pow(alfa2, n2+1)) / (1.0 - alfa2);
+    scalar f0 = ring_width_const - drTot0;
+    scalar f2 = ring_width_const - drTot2;
+    label n1 = label(round(0.5*(n0+n2)));
+    scalar alfa1 = pow(drRatio, 1.0/(n1 + 1.0));
+    scalar drTot1 = actual_crater_top_size*(alfa1 - pow(alfa1, n1+1))/(1.0 - alfa1);
+    scalar f1 = ring_width_const - drTot1;
+
+    label iter = 0;
+    while (iter < 10)
+    {
+        iter++;
+        if ((n0 == n1) || (n1 == n2) || ((n2-n0) == 1))
+        {
+            if ((Foam::mag(f0)*alfa0) < (Foam::mag(f2)*alfa2)) { drTot1 = drTot0; n1 = n0; alfa1 = alfa0; break; }
+            else { drTot1 = drTot2; n1 = n2; alfa1 = alfa2; break; }
+        }
+        if (f0*f1 < 0) { n2 = n1; f2 = f1; drTot2 = drTot1; alfa2 = alfa1; }
+        else { n0 = n1; f0 = f1; drTot0 = drTot1; alfa0 = alfa1; }
+        n1 = label(round(0.5*(n0+n2)));
+        alfa1 = pow(drRatio, 1.0/(n1 + 1.0));
+        drTot1 = actual_crater_top_size*(alfa1 - pow(alfa1, n1+1))/(1.0 - alfa1);
+        f1 = ring_width_const - drTot1;
+    }
+
+    ring_width_const = drTot1;
+    rad_gr_val = pow(alfa1, n1-1);
+    n_rad_gr_interface = n1;
+
+    scalar dz_top_crater = atmCells_aspect_ratio_bottom[0]*r_cr_top/(2.0*n_crater);
+    scalar dz_bottom_crater = atmCells_aspect_ratio_bottom[0]*r_cr_base/(2.0*n_crater);
+    label nz_crater = 1;
+    scalar z_crater_grading = 1.0;
+    calculateGradingCells(h_crater, dz_bottom_crater, dz_top_crater, nz_crater, z_crater_grading);
+
+    label nz_conduit = 0;
+    if (h_conduit > 0)
+    {
+        nz_conduit = round(h_conduit/dz_bottom_crater);
+        nz_conduit = Foam::max(1, nz_conduit);
+    }
+
+    scalar dz_atm_min = dz_top_crater;
+    scalar dz_atm_max = hor_cell_size_top_atm*atmCells_aspect_ratio_top[0] / pow(2, n_vert_layers - 1);
+    scalar dz_bottom_layer(atm_top_z*layer_fraction[1]);
+    label nz_out;
+    scalar z_out_grading;
+    calculateGradingCells(dz_bottom_layer, dz_atm_min, dz_atm_max, nz_out, z_out_grading);
+
+    scalar r_icyl0 = r_crater_top_param + ring_width_const;
+    int nx_pos_out = round((mag(atm_x_pos) - r_icyl0)/hor_cell_size_top_atm);
+    int nx_neg_out = round((mag(atm_x_neg) - r_icyl0)/hor_cell_size_top_atm);
+    nx_pos_out = Foam::max(1, nx_pos_out);
+    nx_neg_out = Foam::max(1, nx_neg_out);
+    int nx_pos_out_mult = nx_pos_out*n_mult;
+    int nx_neg_out_mult = nx_neg_out*n_mult;
+
+    List<scalar> storedGradings(n_vert_layers + 1, rad_gr_val);
+    List<scalar> storedRadiusCyl(n_vert_layers + 1, r_icyl0);
+
+    const scalar yNeg = atm_y_neg;
+    const scalar yPos = atm_y_pos;
+
+    os << "vertices" << nl << "(" << nl;
+    label vertexCount = 0;
+    auto addVertex = [&](scalar x, scalar y, scalar z, const string& comment) -> label
+    {
+        os << "(" << x << " " << y << " " << z << ") // " << vertexCount << " " << comment << nl;
+        vertexCount++; return vertexCount - 1;
+    };
+    auto makeLevel = [&](const List<scalar>& xs, scalar z, const string& prefix) -> List<label>
+    {
+        List<label> ids(2*xs.size(), -1);
+        forAll(xs, i)
+        {
+            ids[2*i] = addVertex(xs[i], yNeg, z, prefix + " y- x" + Foam::name(i));
+            ids[2*i+1] = addVertex(xs[i], yPos, z, prefix + " y+ x" + Foam::name(i));
+        }
+        return ids;
+    };
+    auto id = [&](const List<label>& ids, label ix, label iy) -> label
+    {
+        return ids[2*ix + iy];
+    };
+
+    List<scalar> xs_cond(2), xs_crbase(2);
+    if (halfMode) { xs_cond[0] = 0.0; xs_cond[1] = r_cond_base; xs_crbase[0] = 0.0; xs_crbase[1] = r_cr_base; }
+    else { xs_cond[0] = -r_cond_base; xs_cond[1] = r_cond_base; xs_crbase[0] = -r_cr_base; xs_crbase[1] = r_cr_base; }
+
+    List<label> V_condBase;
+    if (h_conduit > 0) V_condBase = makeLevel(xs_cond, conduit_base_z, "conduitBase");
+    List<label> V_crBase = makeLevel(xs_crbase, crater_base_z, "craterBase");
+
+    List< List<label> > L_bottom(n_vert_layers + 1);
+    List< List<label> > L_top(n_vert_layers + 1);
+    List< label > nBlocksPerLayer(n_vert_layers + 1, 0);
+
+    auto makeLayerXs = [&](scalar rInner, scalar rCyl) -> List<scalar>
+    {
+        if (halfMode) { List<scalar> xs(4); xs[0] = 0.0; xs[1] = rInner; xs[2] = rCyl; xs[3] = atm_x_pos; return xs; }
+        else { List<scalar> xs(6); xs[0] = atm_x_neg; xs[1] = -rCyl; xs[2] = -rInner; xs[3] = rInner; xs[4] = rCyl; xs[5] = atm_x_pos; return xs; }
+    };
+
+    auto makeSelectiveBottomLevel = [&](const List<scalar>& xs, scalar z, const string& prefix, const List<label>& prevTop) -> List<label>
+    {
+        if (prevTop.size() == 0) return makeLevel(xs, z, prefix);
+        List<label> ids(2*xs.size(), -1);
+        forAll(xs, i)
+        {
+            bool duplicateFar = halfMode ? (i == xs.size()-1) : (i == 0 || i == xs.size()-1);
+            if (duplicateFar) { ids[2*i] = addVertex(xs[i], yNeg, z, prefix + " y- x" + Foam::name(i) + " outerDup"); ids[2*i+1] = addVertex(xs[i], yPos, z, prefix + " y+ x" + Foam::name(i) + " outerDup"); }
+            else { ids[2*i] = prevTop[2*i]; ids[2*i+1] = prevTop[2*i+1]; }
+        }
+        return ids;
+    };
+
+    for (label layer = 1; layer <= n_vert_layers; ++layer)
+    {
+        scalar z_bottom = (layer == 1) ? crater_top_z : atm_top_z*layer_fraction[layer-1];
+        scalar rInnerBottom = r_crater_top_param*pow(exp_fact, layer-1);
+        scalar rCylBottom = storedRadiusCyl[layer-1];
+        List<scalar> xsBottom = makeLayerXs(rInnerBottom, rCylBottom);
+        L_bottom[layer] = makeSelectiveBottomLevel(xsBottom, z_bottom, "L" + Foam::name(layer) + " bottom", (layer == 1) ? List<label>() : L_top[layer-1]);
+
+        scalar z_top = atm_top_z*layer_fraction[layer];
+        scalar rInnerTop = r_crater_top_param*pow(exp_fact, layer);
+        scalar scale_factor = pow(exp_fact, layer);
+        scalar d_start_curr = actual_crater_top_size*scale_factor;
+        int div_factor = pow(2, layer-1);
+        label N_xp = Foam::max(1, (int)round(nx_pos_out_mult/(double)div_factor));
+        label N_xn = Foam::max(1, (int)round(nx_neg_out_mult/(double)div_factor));
+        RingParams p_xp = solveRingParameters(rInnerTop, d_start_curr, n_rad_gr_interface, mag(atm_x_pos), N_xp);
+        RingParams p_xn = solveRingParameters(rInnerTop, d_start_curr, n_rad_gr_interface, mag(atm_x_neg), N_xn);
+
+        scalar rCylTop = halfMode ? p_xp.R_icyl : Foam::min(p_xp.R_icyl, p_xn.R_icyl);
+        scalar calculated_grading = halfMode ? p_xp.grading : (Foam::mag(rCylTop - p_xp.R_icyl) < 1e-4) ? p_xp.grading : p_xn.grading;
+        storedRadiusCyl[layer] = rCylTop; storedGradings[layer] = calculated_grading;
+
+        List<scalar> xsTop = makeLayerXs(rInnerTop, rCylTop);
+        L_top[layer] = makeLevel(xsTop, z_top, "L" + Foam::name(layer) + " top");
+        nBlocksPerLayer[layer] = xsTop.size() - 1;
+    }
+
+    os << ");" << nl << nl << "blocks" << nl << "(" << nl;
+
+    auto hexLine = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, label nx, label ny, label nz, const string& grading, const string& comment)
+    {
+        os << "    hex (" << id(bot,i0,0) << " " << id(bot,i1,0) << " " << id(bot,i1,1) << " " << id(bot,i0,1) << " " << id(top,j0,0) << " " << id(top,j1,0) << " " << id(top,j1,1) << " " << id(top,j0,1) << ") (" << nx << " " << ny << " " << nz << ") " << grading.c_str() << " // " << comment << nl;
+    };
+
+    const label nx_inner = halfMode ? 2*n_crater : 4*n_crater;
+
+    if (h_conduit > 0) hexLine(V_condBase, 0, 1, V_crBase, 0, 1, nx_inner, Ny, nz_conduit, "simpleGrading (1 1 1)", "2D conduit");
+    label craterTopLeft = halfMode ? 0 : 2; label craterTopRight = halfMode ? 1 : 3;
+    hexLine(V_crBase, 0, 1, L_bottom[1], craterTopLeft, craterTopRight, nx_inner, Ny, nz_crater, "simpleGrading (1 1 " + Foam::name(z_crater_grading) + ")", "2D crater");
+
+    for (label layer = 1; layer <= n_vert_layers; ++layer)
+    {
+        scalar z_bottom = (layer == 1) ? crater_top_z : atm_top_z*layer_fraction[layer-1];
+        scalar z_top = atm_top_z*layer_fraction[layer];
+        label nz_layer; scalar grading_layer;
+        if (layer == 1) { nz_layer = nz_out; grading_layer = z_out_grading; }
+        else { scalar layer_z = z_top - z_bottom; dz_atm_min = hor_cell_size_top_atm/pow(2, n_vert_layers - layer) * atmCells_aspect_ratio_bottom[layer-1]; dz_atm_max = hor_cell_size_top_atm/pow(2, n_vert_layers - layer) * atmCells_aspect_ratio_top[layer-1]; calculateGradingCells(layer_z, dz_atm_min, dz_atm_max, nz_layer, grading_layer); }
+        int j_fact = pow(2, Foam::max(0, layer-1));
+        label current_nx_p = Foam::max(1, nx_pos_out_mult/j_fact);
+        label current_nx_n = Foam::max(1, nx_neg_out_mult/j_fact);
+        scalar g_bot = storedGradings[layer-1], g_top = storedGradings[layer], g_vert = grading_layer;
+
+        if (halfMode)
+        {
+            hexLine(L_bottom[layer], 0, 1, L_top[layer], 0, 1, nx_inner, Ny, nz_layer, "simpleGrading (1 1 " + Foam::name(grading_layer) + ")", "L" + Foam::name(layer) + " inner");
+            string edgeGrade = "edgeGrading (" + Foam::name(g_bot) + " " + Foam::name(g_bot) + " " + Foam::name(g_top) + " " + Foam::name(g_top) + " 1 1 1 1 " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + ")";
+            hexLine(L_bottom[layer], 1, 2, L_top[layer], 1, 2, n_rad_gr_interface, Ny, nz_layer, edgeGrade, "L" + Foam::name(layer) + " transition x+");
+            hexLine(L_bottom[layer], 2, 3, L_top[layer], 2, 3, current_nx_p, Ny, nz_layer, "simpleGrading (1 1 " + Foam::name(grading_layer) + ")", "L" + Foam::name(layer) + " outer x+");
+        }
+        else
+        {
+            hexLine(L_bottom[layer], 0, 1, L_top[layer], 0, 1, current_nx_n, Ny, nz_layer, "simpleGrading (1 1 " + Foam::name(grading_layer) + ")", "L" + Foam::name(layer) + " outer x-");
+            string edgeGradeLeft = "edgeGrading (" + Foam::name(1.0/g_bot) + " " + Foam::name(1.0/g_bot) + " " + Foam::name(1.0/g_top) + " " + Foam::name(1.0/g_top) + " 1 1 1 1 " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + ")";
+            hexLine(L_bottom[layer], 1, 2, L_top[layer], 1, 2, n_rad_gr_interface, Ny, nz_layer, edgeGradeLeft, "L" + Foam::name(layer) + " transition x-");
+            hexLine(L_bottom[layer], 2, 3, L_top[layer], 2, 3, nx_inner, Ny, nz_layer, "simpleGrading (1 1 " + Foam::name(grading_layer) + ")", "L" + Foam::name(layer) + " inner");
+            string edgeGradeRight = "edgeGrading (" + Foam::name(g_bot) + " " + Foam::name(g_bot) + " " + Foam::name(g_top) + " " + Foam::name(g_top) + " 1 1 1 1 " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + " " + Foam::name(g_vert) + ")";
+            hexLine(L_bottom[layer], 3, 4, L_top[layer], 3, 4, n_rad_gr_interface, Ny, nz_layer, edgeGradeRight, "L" + Foam::name(layer) + " transition x+");
+            hexLine(L_bottom[layer], 4, 5, L_top[layer], 4, 5, current_nx_p, Ny, nz_layer, "simpleGrading (1 1 " + Foam::name(grading_layer) + ")", "L" + Foam::name(layer) + " outer x+");
+        }
+    }
+
+    os << ");" << nl << nl << "edges" << nl << "(" << nl << ");" << nl << nl << "boundary" << nl << "(" << nl;
+    auto faceYNeg = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string& comment) { os << "            (" << id(bot,i0,0) << " " << id(bot,i1,0) << " " << id(top,j1,0) << " " << id(top,j0,0) << ") // " << comment << nl; };
+    auto faceYPos = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string& comment) { os << "            (" << id(bot,i0,1) << " " << id(top,j0,1) << " " << id(top,j1,1) << " " << id(bot,i1,1) << ") // " << comment << nl; };
+    auto faceZ = [&](const List<label>& lev, label i0, label i1, const string& comment) { os << "            (" << id(lev,i0,0) << " " << id(lev,i1,0) << " " << id(lev,i1,1) << " " << id(lev,i0,1) << ") // " << comment << nl; };
+    auto faceX = [&](const List<label>& bot, label ix, const List<label>& top, label jx, const string& comment) { os << "            (" << id(bot,ix,0) << " " << id(bot,ix,1) << " " << id(top,jx,1) << " " << id(top,jx,0) << ") // " << comment << nl; };
+
+    os << "    front" << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl; // <--- Changed from empty to patch
+    if (h_conduit > 0) faceYNeg(V_condBase, 0, 1, V_crBase, 0, 1, "conduit front y-");
+    faceYNeg(V_crBase, 0, 1, L_bottom[1], craterTopLeft, craterTopRight, "crater front y-");
+    for (label layer = 1; layer <= n_vert_layers; ++layer) { label nb = nBlocksPerLayer[layer]; for (label i = 0; i < nb; ++i) faceYNeg(L_bottom[layer], i, i+1, L_top[layer], i, i+1, "L" + Foam::name(layer) + " block " + Foam::name(i) + " front y-"); }
+    os << "        );" << nl << "    }" << nl << nl;
+
+    os << "    back" << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl; // <--- Changed from empty to patch
+    if (h_conduit > 0) faceYPos(V_condBase, 0, 1, V_crBase, 0, 1, "conduit back y+");
+    faceYPos(V_crBase, 0, 1, L_bottom[1], craterTopLeft, craterTopRight, "crater back y+");
+    for (label layer = 1; layer <= n_vert_layers; ++layer) { label nb = nBlocksPerLayer[layer]; for (label i = 0; i < nb; ++i) faceYPos(L_bottom[layer], i, i+1, L_top[layer], i, i+1, "L" + Foam::name(layer) + " block " + Foam::name(i) + " back y+"); }
+    os << "        );" << nl << "    }" << nl << nl;
+
+    os << "    terrain_in" << nl << "    {" << nl << "        type wall;" << nl << "        inGroups (terrain);" << nl << "        faces" << nl << "        (" << nl;
+    if (h_conduit > 0) { faceZ(V_condBase, 0, 1, "conduit inlet/base"); if (!halfMode) faceX(V_condBase, 0, V_crBase, 0, "conduit wall x-"); faceX(V_condBase, 1, V_crBase, 1, "conduit wall x+"); }
+    else faceZ(V_crBase, 0, 1, "crater base");
+    if (!halfMode) faceX(V_crBase, 0, L_bottom[1], craterTopLeft, "crater wall x-");
+    faceX(V_crBase, 1, L_bottom[1], craterTopRight, "crater wall x+");
+    os << "        );" << nl << "    }" << nl << nl;
+
+    os << "    terrain_out" << nl << "    {" << nl << "        type wall;" << nl << "        inGroups (terrain);" << nl << "        faces" << nl << "        (" << nl;
+    if (halfMode) { faceZ(L_bottom[1], 1, 2, "L1 transition ground x+"); faceZ(L_bottom[1], 2, 3, "L1 outer ground x+"); }
+    else { faceZ(L_bottom[1], 0, 1, "L1 outer ground x-"); faceZ(L_bottom[1], 1, 2, "L1 transition ground x-"); faceZ(L_bottom[1], 3, 4, "L1 transition ground x+"); faceZ(L_bottom[1], 4, 5, "L1 outer ground x+"); }
+    os << "        );" << nl << "    }" << nl << nl;
+
+    if (halfMode) { os << "    axis" << nl << "    {" << nl << "        type symmetryPlane;" << nl << "        faces" << nl << "        (" << nl; if (h_conduit > 0) faceX(V_condBase, 0, V_crBase, 0, "axis conduit"); faceX(V_crBase, 0, L_bottom[1], 0, "axis crater"); for (label layer = 1; layer <= n_vert_layers; ++layer) faceX(L_bottom[layer], 0, L_top[layer], 0, "axis L" + Foam::name(layer)); os << "        );" << nl << "    }" << nl << nl; }
+
+    os << "    atm" << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl;
+    for (label layer = 1; layer <= n_vert_layers; ++layer) { label nb = nBlocksPerLayer[layer]; if (!halfMode) faceX(L_bottom[layer], 0, L_top[layer], 0, "atm x- L" + Foam::name(layer)); faceX(L_bottom[layer], nb, L_top[layer], nb, "atm x+ L" + Foam::name(layer)); }
+    os << "        );" << nl << "    }" << nl << nl;
+
+    os << "    top" << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl; label N_top = n_vert_layers; for (label i = 0; i < nBlocksPerLayer[N_top]; ++i) faceZ(L_top[N_top], i, i+1, "top block " + Foam::name(i)); os << "        );" << nl << "    }" << nl << nl;
+
+    for (label layer = 1; layer < n_vert_layers; ++layer)
+    {
+        os << "    top_outer_layer" << layer << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl;
+        if (halfMode) faceZ(L_top[layer], 2, 3, "top outer x+ L" + Foam::name(layer));
+        else { faceZ(L_top[layer], 0, 1, "top outer x- L" + Foam::name(layer)); faceZ(L_top[layer], 4, 5, "top outer x+ L" + Foam::name(layer)); }
+        os << "        );" << nl << "    }" << nl << nl;
+        os << "    bottom_outer_layer" << layer+1 << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl;
+        if (halfMode) faceZ(L_bottom[layer+1], 2, 3, "bottom outer x+ L" + Foam::name(layer+1));
+        else { faceZ(L_bottom[layer+1], 0, 1, "bottom outer x- L" + Foam::name(layer+1)); faceZ(L_bottom[layer+1], 4, 5, "bottom outer x+ L" + Foam::name(layer+1)); }
+        os << "        );" << nl << "    }" << nl << nl;
+    }
+    os << ");" << nl << nl << "mergePatchPairs" << nl << "(" << nl;
+    for (label layer = 1; layer < n_vert_layers; ++layer) os << "    (top_outer_layer" << layer << " bottom_outer_layer" << layer+1 << ")" << nl;
+    os << ");" << nl;
+#};
+};

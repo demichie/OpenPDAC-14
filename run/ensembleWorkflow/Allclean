@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# =============================================================================
+# Allclean - Script to clean up all generated files and directories.
+#
+# This script will REMOVE the following items:
+#  - All 'ensemble.*' directories from the current location.
+#  - All files inside the 'CSV/' directory.
+#  - All plot files inside the 'ENSEMBLE_PLOTS/' directory.
+#  - All 'log.*' files from the current location.
+#
+# It will ask for confirmation before deleting anything.
+# =============================================================================
+
+echo "This script will clean up all generated files and directories."
+echo
+
+# --- List Items to be Deleted ---
+# This makes the script safer by showing the user exactly what will be removed.
+echo "The following items have been found and will be PERMANENTLY DELETED:"
+echo "-----------------------------------------------------------------"
+
+# Find 'ensemble.*' directories in the current folder.
+find . -maxdepth 1 -type d -name "ensemble.*" -exec echo "  [Directory] {}" \;
+
+# CORRECTED: Find files inside the 'CSV' directory.
+find CSV -type f -name "*.csv" -exec echo "  [CSV File]  {}" \;
+
+# CORRECTED: Find plot files inside the 'ENSEMBLE_PLOTS' directory.
+find ENSEMBLE_PLOTS -type f \( -name "*.png" -o -name "*.pdf" \) -exec echo "  [Plot File] {}" \;
+
+# Find 'log.*' files in the current folder.
+find . -maxdepth 1 -type f -name "log.*" -exec echo "  [Log File]  {}" \;
+
+echo "-----------------------------------------------------------------"
+echo # Add a newline for better formatting
+
+# --- Confirmation Prompt ---
+# The -p flag displays a prompt. The default answer (if user hits Enter) is No.
+read -p "Are you sure you want to proceed with deletion? [y/N] " response
+echo # Add a newline
+
+# --- Deletion Logic ---
+# Check if the user typed 'y' or 'Y'.
+if [[ "$response" =~ ^[yY]$ ]]; then
+    echo "--> Cleaning up..."
+
+    # Use 'find' with the '-delete' action for safe and precise removal.
+    # This is often safer than 'rm -rf' as it won't fail if nothing is found.
+
+    # Delete 'ensemble.*' directories
+    find . -maxdepth 1 -type d -name "ensemble.*" -exec rm -rf {} +
+    
+    # Delete contents of 'CSV' directory
+    find CSV -type f -name "*.csv" -delete
+    
+    # Delete contents of 'ENSEMBLE_PLOTS' directory
+    find ENSEMBLE_PLOTS -type f \( -name "*.png" -o -name "*.pdf" \) -delete
+    
+    # Delete 'log.*' files
+    find . -maxdepth 1 -type f -name "log.*" -delete
+
+    echo "Cleanup complete."
+else
+    echo "Cleanup aborted by user. No files were deleted."
+fi

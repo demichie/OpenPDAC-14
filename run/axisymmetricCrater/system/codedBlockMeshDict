@@ -1,0 +1,353 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  any
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Include shared geometry parameters
+#include "../constant/geometryParameters"
+
+#codeStream {
+
+codeInclude
+#{
+    #include "scalarList.H"
+    #include <string> // Necessario per std::string e std::to_string
+#};
+
+
+code #
+{
+    // --- 1. Parameter Setup ---
+    const Foam::scalarList& atmCells_aspect_ratio_bottom =
+        dict.lookup("atmCells_aspect_ratio_bottom");
+    const Foam::scalarList& atmCells_aspect_ratio_top =
+        dict.lookup("atmCells_aspect_ratio_top");
+
+    scalar x_min = $atm_x_neg;
+    scalar x_max = $atm_x_pos;
+    scalar y_min = $atm_y_neg;
+    scalar y_max = $atm_y_pos;
+    scalar Lx = x_max - x_min;
+    scalar Ly = y_max - y_min;
+
+    // --- 2. Horizontal Resolution Pre-Calculation ---
+    // Layer 1 is the finest layer. Each layer above it is coarser by a
+    // factor of 2 in x and y.  To make the interfaces conformal, the finest
+    // cell counts must be divisible by 2^(n_vert_layers-1).
+    label refinementFactor = label(pow(2.0, $n_vert_layers - 1));
+
+    label nxFine0 = Foam::max(1, label(round(Lx / $hor_cell_size_topo)));
+    label nyFine0 = Foam::max(1, label(round(Ly / $hor_cell_size_topo)));
+
+    label nxFine = refinementFactor
+        * Foam::max(1, label(round(scalar(nxFine0) / refinementFactor)));
+    label nyFine = refinementFactor
+        * Foam::max(1, label(round(scalar(nyFine0) / refinementFactor)));
+
+    Info << "nxFine0=" << nxFine0 << " nxFine=" << nxFine << endl;
+    Info << "nyFine0=" << nyFine0 << " nyFine=" << nyFine << endl;
+
+    // --- 3. Vertical Grading Pre-Calculation ---
+    List<scalar> layer_fraction($n_vert_layers + 1, 0.0);
+    layer_fraction[$n_vert_layers] = 1.0;
+    scalar delta_z($dz_ratio);
+    scalar zlayer_rel = 0.0;
+
+    // The first n_vert_layers-1 layer interfaces are computed from the
+    // requested bottom/top aspect ratios.  IMPORTANT: list index 0 belongs to
+    // layer 1, index 1 to layer 2, etc.
+    for (label layer = 1; layer <= $n_vert_layers - 1; ++layer)
+    {
+        label listIdx = layer - 1;
+        label idx_bot = Foam::min
+        (
+            Foam::max(0, listIdx),
+            atmCells_aspect_ratio_bottom.size() - 1
+        );
+        label idx_top = Foam::min
+        (
+            Foam::max(0, listIdx),
+            atmCells_aspect_ratio_top.size() - 1
+        );
+
+        label layerFactor = label(pow(2.0, layer - 1));
+        label nxLayer = Foam::max(1, nxFine / layerFactor);
+        label nyLayer = Foam::max(1, nyFine / layerFactor);
+
+        scalar dxLayer = Lx / scalar(nxLayer);
+        scalar dyLayer = Ly / scalar(nyLayer);
+        scalar horizontalCellSize = 0.5 * (dxLayer + dyLayer);
+
+        scalar dz_bottom = horizontalCellSize * atmCells_aspect_ratio_bottom[idx_bot];
+        scalar dz_top = horizontalCellSize * atmCells_aspect_ratio_top[idx_top];
+
+        label N = 0;
+        scalar z_layer = dz_bottom;
+
+        if (Foam::mag(dz_top - dz_bottom) < 1e-9 * dz_bottom)
+        {
+            // Uniform vertical spacing in this layer.
+            N = 0;
+            z_layer = dz_bottom;
+        }
+        else
+        {
+            N = Foam::max
+            (
+                0,
+                label(round(Foam::log(dz_top/dz_bottom) / Foam::log(delta_z)))
+            );
+            z_layer = dz_bottom
+                * (1.0 - pow(delta_z, N + 1))
+                / (1.0 - delta_z);
+        }
+
+        Info << "layer " << layer << endl;
+        Info << "N " << N << endl;
+        Info << "dz_bottom " << dz_bottom << endl;
+        Info << "dz_top " << dz_top << endl;
+        Info << "z_layer " << z_layer << endl;
+
+        zlayer_rel += z_layer / $atm_top_z;
+        layer_fraction[layer] = zlayer_rel;
+
+        Info << "z_layer_rel " << zlayer_rel << endl;
+    }
+
+    Info << "Layer Fractions: " << layer_fraction << endl;
+
+    // --- Grading Helper Lambda ---
+    auto calculateGradingCells = [&](scalar totalLength, scalar cellSizeStart, scalar cellSizeEnd, label& nCells, scalar& grading) -> void 
+    {
+        nCells = 0; grading = 1.0; scalar tolerance = 1e-4; label maxIter = 50;
+        if (totalLength < 1e-9) return;
+        cellSizeStart = Foam::max(1e-12, cellSizeStart);
+        cellSizeEnd = Foam::max(1e-12, cellSizeEnd);
+
+        if (Foam::mag(cellSizeEnd - cellSizeStart) < 1e-9 * cellSizeStart) {
+            nCells = Foam::max(1, label(round(totalLength / cellSizeStart)));
+            grading = 1.0; return;
+        }
+
+        scalar r = cellSizeEnd / cellSizeStart; 
+        scalar K = totalLength / cellSizeStart; 
+
+        if (r <= 1.0 + 1e-6 || K <= 1.0 + 1e-6) {
+            nCells = Foam::max(1, label(round(totalLength / cellSizeStart)));
+            grading = 1.0; return;
+        }
+
+        scalar n0 = Foam::max(1.0 + tolerance, K / r);
+        scalar n2 = K;
+
+        auto calculateF = [&](scalar n_val) -> scalar {
+            if (n_val <= 1.0 + 1e-6) return -K;
+            scalar rn = pow(r, n_val / (n_val - 1.0));
+            scalar r1 = pow(r, 1.0 / (n_val - 1.0));
+            if (Foam::mag(r1 - 1.0) < 1e-9) return -K;
+            return (rn - 1.0) / (r1 - 1.0) - K;
+        };
+
+        if (n2 < n0 || ceil(n0) >= floor(n2)) {
+            nCells = Foam::max(1, label(round(totalLength / cellSizeStart)));
+            grading = 1.0; return;
+        }
+
+        scalar f0 = calculateF(n0); scalar n1 = 0.5 * (n0 + n2); scalar f1 = calculateF(n1);
+        label iter = 0;
+        while (Foam::mag(n2 - n0) > tolerance && iter < maxIter) {
+            iter++;
+            if (f0 * f1 < 0) { n2 = n1; } else { n0 = n1; f0 = f1; }
+            n1 = 0.5 * (n0 + n2); f1 = calculateF(n1);
+        }
+        nCells = Foam::max(1, label(round(n1)));
+        grading = r; 
+    };
+
+
+    // ==========================================
+    // LOOP 1: GENERATE ALL VERTICES
+    // ==========================================
+    os << "vertices" << endl;
+    os << "(" << endl;
+
+    for (label layer = 1; layer <= $n_vert_layers; ++layer)
+    {
+        scalar z_bot = (layer == 1) ? 0.0 : $atm_top_z * layer_fraction[layer - 1];
+        scalar z_top = $atm_top_z * layer_fraction[layer];
+
+        // Vertices 0-3 (Bottom)
+        os << "(" << x_min << " " << y_min << " " << z_bot << ")" << endl; // 0
+        os << "(" << x_max << " " << y_min << " " << z_bot << ")" << endl; // 1
+        os << "(" << x_max << " " << y_max << " " << z_bot << ")" << endl; // 2
+        os << "(" << x_min << " " << y_max << " " << z_bot << ")" << endl; // 3
+        
+        // Vertices 4-7 (Top)
+        os << "(" << x_min << " " << y_min << " " << z_top << ")" << endl; // 4
+        os << "(" << x_max << " " << y_min << " " << z_top << ")" << endl; // 5
+        os << "(" << x_max << " " << y_max << " " << z_top << ")" << endl; // 6
+        os << "(" << x_min << " " << y_max << " " << z_top << ")" << endl; // 7
+    }
+    os << ");" << endl;
+
+
+    // ==========================================
+    // LOOP 2: GENERATE BLOCKS & FACES
+    // ==========================================
+    List< std::string > atmFaces($n_vert_layers + 1);
+    List< std::string > interfaceBottomFaces($n_vert_layers + 1);
+    List< std::string > interfaceTopFaces($n_vert_layers + 1);
+    std::string terrainFaces;
+    std::string topFaces;
+
+    os << "blocks" << endl;
+    os << "(" << endl;
+
+    for (label layer = 1; layer <= $n_vert_layers; ++layer)
+    {
+        scalar z_bot = (layer == 1) ? 0.0 : $atm_top_z * layer_fraction[layer - 1];
+        scalar z_top = $atm_top_z * layer_fraction[layer];
+        scalar H_layer = z_top - z_bot;
+        if (H_layer < 1e-9) H_layer = 1e-3;
+
+        // 2. Horizontal Resolution
+        // Current layer cell counts.  Since nxFine and nyFine were forced to
+        // be multiples of 2^(n_vert_layers-1), every interface is conformal.
+        label layerFactor = label(pow(2.0, layer - 1));
+        label nx = Foam::max(1, nxFine / layerFactor);
+        label ny = Foam::max(1, nyFine / layerFactor);
+
+        // 3. Vertical Grading Logic (CORRECTED)
+        label nz; scalar grading_z;
+        scalar dz_min_local;
+        scalar dz_max_local;
+
+        // Layer 1 uses index 0, layer 2 uses index 1, etc.
+        // This fixes the off-by-one error that made the top layer use
+        // atmCells_aspect_ratio_top[2] instead of atmCells_aspect_ratio_top[3].
+        label listIdx = layer - 1;
+        label idx_bot = Foam::min
+        (
+            Foam::max(0, listIdx),
+            atmCells_aspect_ratio_bottom.size() - 1
+        );
+        label idx_top = Foam::min
+        (
+            Foam::max(0, listIdx),
+            atmCells_aspect_ratio_top.size() - 1
+        );
+
+        scalar dxLayer = Lx / scalar(nx);
+        scalar dyLayer = Ly / scalar(ny);
+        scalar horizontalCellSize = 0.5 * (dxLayer + dyLayer);
+
+        dz_min_local = horizontalCellSize * atmCells_aspect_ratio_bottom[idx_bot];
+        dz_max_local = horizontalCellSize * atmCells_aspect_ratio_top[idx_top];
+
+        calculateGradingCells(H_layer, dz_min_local, dz_max_local, nz, grading_z);
+
+        Info << "Layer " << layer << ": nx=" << nx << " ny=" << ny << " nz=" << nz << " grading=" << grading_z << endl;
+
+        // 4. Calculate Vertex Indices
+        label startIdx = (layer - 1) * 8;
+        
+        label v0 = startIdx + 0; label v1 = startIdx + 1;
+        label v2 = startIdx + 2; label v3 = startIdx + 3;
+        label v4 = startIdx + 4; label v5 = startIdx + 5;
+        label v6 = startIdx + 6; label v7 = startIdx + 7;
+
+        // 5. Write Block
+        os << "    hex (" 
+           << v0 << " " << v1 << " " << v2 << " " << v3 << " "
+           << v4 << " " << v5 << " " << v6 << " " << v7 
+           << ") (" << nx << " " << ny << " " << nz << ") "
+           << "simpleGrading (1 1 " << grading_z << ") // Layer " << layer << endl;
+
+        // 6. Store Faces for Patches
+        if (layer == 1) {
+            terrainFaces = "(" + std::to_string(v0) + " " + std::to_string(v3) + " " + std::to_string(v2) + " " + std::to_string(v1) + ")";
+        }
+        if (layer == $n_vert_layers) {
+            topFaces = "(" + std::to_string(v4) + " " + std::to_string(v5) + " " + std::to_string(v6) + " " + std::to_string(v7) + ")";
+        }
+        
+        interfaceTopFaces[layer] = "(" + std::to_string(v4) + " " + std::to_string(v5) + " " + std::to_string(v6) + " " + std::to_string(v7) + ")";
+        interfaceBottomFaces[layer] = "(" + std::to_string(v0) + " " + std::to_string(v3) + " " + std::to_string(v2) + " " + std::to_string(v1) + ")";
+
+        std::string fS = "(" + std::to_string(v0) + " " + std::to_string(v1) + " " + std::to_string(v5) + " " + std::to_string(v4) + ")";
+        std::string fE = "(" + std::to_string(v1) + " " + std::to_string(v2) + " " + std::to_string(v6) + " " + std::to_string(v5) + ")";
+        std::string fN = "(" + std::to_string(v2) + " " + std::to_string(v3) + " " + std::to_string(v7) + " " + std::to_string(v6) + ")";
+        std::string fW = "(" + std::to_string(v3) + " " + std::to_string(v0) + " " + std::to_string(v4) + " " + std::to_string(v7) + ")";
+        atmFaces[layer] = fS + " " + fE + " " + fN + " " + fW;
+    }
+    os << ");" << endl; 
+
+    os << "edges () ;" << endl; 
+
+    // --- 4. Boundary Definition ---
+    os << "boundary" << endl;
+    os << "(" << endl;
+
+    os << "    terrain" << endl;
+    os << "    {" << endl;
+    os << "        type wall;" << endl;
+    os << "        faces (" << terrainFaces.c_str() << ");" << endl;
+    os << "    }" << endl;
+
+    os << "    atm" << endl;
+    os << "    {" << endl;
+    os << "        type patch;" << endl;
+    os << "        faces" << endl;
+    os << "        (" << endl;
+    for (label layer = 1; layer <= $n_vert_layers; ++layer) {
+        os << "            " << atmFaces[layer].c_str() << " // Layer " << layer << endl;
+    }
+    os << "        );" << endl;
+    os << "    }" << endl;
+
+    os << "    top" << endl;
+    os << "    {" << endl;
+    os << "        type patch;" << endl;
+    os << "        faces (" << topFaces.c_str() << ");" << endl;
+    os << "    }" << endl;
+
+    for (label layer = 1; layer < $n_vert_layers; ++layer)
+    {
+        os << "    top_layer" << layer << endl;
+        os << "    {" << endl;
+        os << "        type patch;" << endl;
+        os << "        faces (" << interfaceTopFaces[layer].c_str() << ");" << endl;
+        os << "    }" << endl;
+
+        os << "    bottom_layer" << layer+1 << endl;
+        os << "    {" << endl;
+        os << "        type patch;" << endl;
+        os << "        faces (" << interfaceBottomFaces[layer+1].c_str() << ");" << endl;
+        os << "    }" << endl;
+    }
+    os << ");" << endl; 
+
+    // --- 5. Merge Patch Pairs ---
+    os << "mergePatchPairs" << endl;
+    os << "(" << endl;
+    for (label layer = 1; layer < $n_vert_layers; ++layer)
+    {
+        os << "    (top_layer" << layer << " bottom_layer" << layer+1 << ")" << endl;
+    }
+    os << ");" << endl;
+
+#}; // End Code
+
+}; // End CodeStream
+
+// ************************************************************************* //

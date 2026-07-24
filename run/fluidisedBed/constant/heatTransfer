@@ -1,0 +1,30 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      heatTransfer;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+particles1_dispersedIn_air
+{
+    type            RanzMarshall;
+    residualAlpha   1e-8;
+}
+
+particles2_dispersedIn_air
+{
+    type            RanzMarshall;
+    residualAlpha   1e-8;
+}
+
+
+// ************************************************************************* //

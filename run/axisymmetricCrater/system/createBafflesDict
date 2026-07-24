@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      createBafflesDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// This global switch tells the utility to ignore any faces in the
+// input zone that are already on an external boundary. This is the key
+// to cleaning the "dirty" zone we created in the previous step.
+internalFacesOnly true;
+
+
+baffles
+{
+    // The name of this entry must also match the zoneName.
+    nozzleBaffle
+    {
+        type            faceZone;
+
+        // This name MUST match the zone created by createZones.
+        zoneName        nozzleBaffle;
+
+        patches
+        {
+            master
+            {
+                name            nozzleLeftWall;
+                type            wall;
+                patchInfo       {};
+            }
+            slave
+            {
+                name            nozzleRightWall;
+                type            wall;
+                patchInfo       {};
+            }
+        }
+    }
+}
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

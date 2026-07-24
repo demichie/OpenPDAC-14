@@ -1,0 +1,222 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      topoGridDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// -----------------------------------------------------------------------------
+// Mesh deformation
+// -----------------------------------------------------------------------------
+
+// Enable/disable the DEM-based deformation stage.  If false, topoGrid skips the
+// volumetric deformation and can still run the smoothing stage if smoothing=true.
+deform true;
+
+// ESRI ASCII raster file containing the DEM elevations used to deform the lower
+// boundary of the mesh.  Coordinates must be in a projected metric system.
+rasterFile ubehebe_transect_local_10m.asc //ubehebe_transect_local.asc;
+
+// Horizontal coordinates of the vent/reference point used by the crater-related
+// distance functions and for centering local radial corrections.
+xVent 0;
+yVent 0.0;
+
+// Relative search radius used when interpolating DEM face-centre elevations to
+// z=0 mesh points.  Values close to 1 behave like nearest-neighbour sampling;
+// larger values smooth the terrain seen by the mesh.  A typical value is 4-8.
+interpRelRadius 4.0;
+
+// Write an STL representation of the deformed/cropped topography for inspection.
+saveSTL false;
+
+// Write binary output files where supported.  This reduces file size and I/O
+// time, but produces files that are not human-readable.
+saveBinary true;
+
+// Save the DEM/topography crop used internally by topoGrid.
+saveCrop no;
+
+// Optional diagnostic: run/check mesh quality after deformation if supported by
+// the executable.  Default in the code is false if this entry is omitted.
+// checkMesh false;
+
+// Move the top boundary upward by the maximum bottom displacement.  This keeps
+// the domain height approximately unchanged after lifting the terrain.  Default
+// in the code is true if this entry is omitted.
+// raiseTop true;
+
+// Enable the horizontal correction derived from terrain normals.  This shifts
+// internal nodes laterally so near-ground cell columns align better with the
+// deformed terrain surface, reducing near-wall non-orthogonality.
+orthogonalCorrection false;
+
+// Relative horizontal distance controlling the transition region where only the
+// vertical displacement is applied near the vent/crater correction zone.
+dist_rel1 0.05;
+
+// Relative horizontal distance controlling the outer transition region where the
+// combined vertical and horizontal displacement is applied near the vent/crater
+// correction zone.
+dist_rel2 0.15;
+
+// Absolute radial distance from (xVent,yVent) for the inner crater zone where
+// only vertical displacement is applied.
+distC1 50.0;
+
+// Absolute radial distance from (xVent,yVent) for the outer crater transition
+// where both vertical and horizontal displacement are applied.
+distC2 1000.0;
+
+// Coefficient multiplying the vertical separation in the 3D IDW distance.
+// 1.0 gives isotropic 3D interpolation; values near 0 make the interpolation
+// depend mainly on horizontal distance, projecting terrain effects vertically.
+coeffVertDeformation 1.0;
+
+// Fraction of the upper vertical extent over which horizontal deformation is
+// suppressed.  A value of 0 disables the undeformed top layer; larger values
+// keep a thicker top region closer to the original mesh.
+noDeformCoeff 0.0;
+
+// Exponent used in the vertical tapering of the no-deformation/top blending
+// function.  Larger values make the taper sharper near the top layer.
+noDeformExp 3.5;
+
+// Optional subsurface horizontal deformation.  Use these lists to impose an
+// additional x/y displacement for points at negative z.  The lists must have the
+// same length.  zNeg must be sorted in decreasing order, i.e. less negative
+// first, for example (-50 -100 -200).  dxNeg and dyNeg give the corresponding
+// horizontal offsets at each depth; topoGrid linearly interpolates between them.
+// zNeg  ( -10.00 );
+//dxNeg (  0.0 );
+//dyNeg ( 0.0 );
+
+
+// -----------------------------------------------------------------------------
+// Hybrid mesh smoothing / quality improvement
+// -----------------------------------------------------------------------------
+
+// Enable/disable the hybrid smoother.  The smoother combines targeted rotational
+// corrections of the worst non-orthogonal faces with periodic blended Laplacian
+// relaxation and optional quality-aware acceptance tests.
+smoothing true;
+
+// Maximum number of smoothing iterations.  The algorithm can stop earlier if the
+// non-orthogonality target stopOnQualityDeg is reached.
+nIter 500;
+
+// Maximum rotation angle, in degrees, applied in one targeted rotational
+// correction.  Small values make the correction gradual and stable; larger
+// values can converge faster but may distort neighbouring cells.
+maxRotationAngleDeg 0.1;
+
+// Target maximum non-orthogonality angle, in degrees.  Smoothing stops once the
+// worst non-orthogonality is below this value, or when nIter is reached.
+stopOnQualityDeg 40.0;
+
+// Frequency of the blended Laplacian step.  Every laplacianFrequency iterations
+// topoGrid applies Laplacian relaxation instead of a rotational correction.
+// Set to 0 to disable Laplacian steps.
+laplacianFrequency 20;
+
+// Relaxation factor for the Laplacian displacement.  This scales the movement
+// toward the blended target position at each Laplacian step.
+laplacianRelaxFactor 0.05;
+
+// Enable a near-ground constraint for the Laplacian smoother.  Points in the
+// first normalAwareLayers topological layers from wall patches are smoothed
+// mainly tangentially to the local terrain, limiting motion normal to the ground.
+normalAwareNearGroundSmoothing true;
+
+// Number of point-connectivity layers above wall/terrain patches to protect with
+// the normal-aware constraint.  0 disables the mask even if the switch is true.
+normalAwareLayers 2;
+
+// Strength of the normal-motion removal in the protected layers.  0 leaves the
+// Laplacian displacement unchanged; 1 removes the full normal component and keeps
+// only tangential motion.
+normalAwareNormalRelax 0.1;
+
+// Blending factor for the Laplacian target position.  0 uses the standard
+// point-neighbour Laplacian target; 1 uses the surrounding-cell-centre target;
+// intermediate values blend the two.  Values around 0.2-0.5 can be useful when
+// cell-centre information should contribute to the smoothing direction.
+internalBlending 1.0;
+
+
+// -----------------------------------------------------------------------------
+// Quality-aware Laplacian acceptance and backtracking
+// -----------------------------------------------------------------------------
+
+// Evaluate checkMesh-like quality indicators before accepting a Laplacian step.
+// When enabled, topoGrid can reject or reduce a smoothing step that would create
+// more concave cells or degrade face-tet quality beyond the limits below.
+qualityAwareLaplacian true;
+
+// If true, reject a Laplacian candidate that increases the number of concave
+// cells, or exceeds maxAllowedConcaveCells when that limit is non-negative.
+rejectLaplacianOnConcave true;
+
+// If true, reject a Laplacian candidate whose minimum face-tet quality is below
+// minAllowedTetQuality.
+rejectLaplacianOnLowTetQuality true;
+
+// Minimum acceptable face-tet quality for the quality-aware Laplacian and for
+// the best-state low-tet penalty.  Very small positive values only reject nearly
+// invalid or inverted local decompositions.
+minAllowedTetQuality 1e-15;
+
+// Maximum allowed number of concave cells after a Laplacian step.  A negative
+// value disables this absolute limit, leaving only the increase/decrease test.
+maxAllowedConcaveCells -1;
+
+// Geometric tolerance used by the internal concave-cell counter.  If omitted,
+// topoGrid uses OpenFOAM's SMALL value.
+// qualityAwareConcavityTolerance 1e-15;
+
+// If a full Laplacian step is rejected, try again with a reduced displacement.
+laplacianBacktracking true;
+
+// Multiplicative reduction factor used during backtracking.  For example, 0.5
+// tries half the previous displacement at each backtracking attempt.
+laplacianBacktrackingFactor 0.5;
+
+// Smallest relative Laplacian displacement allowed during backtracking.  If no
+// acceptable candidate is found before this scale is reached, the Laplacian step
+// is rejected and the previous mesh state is restored.
+laplacianMinRelaxFactor 0.003;
+
+
+// -----------------------------------------------------------------------------
+// Best-state selection
+// -----------------------------------------------------------------------------
+
+// Store and restore the best mesh state found during smoothing using a composite
+// score instead of only the maximum non-orthogonality.  The score used by the
+// current code is approximately:
+//     maxNonOrtho[deg]
+//   + bestStateConcaveWeight*nConcave
+//   + bestStateLowTetWeight, if minTetQuality < minAllowedTetQuality
+bestStateUseQualityScore false;
+
+// Weight applied to the number of concave cells in the best-state score.  Larger
+// values favour meshes with fewer concave cells, even if non-orthogonality is
+// slightly worse.
+bestStateConcaveWeight 0.01;
+
+// Penalty added to the best-state score when the minimum face-tet quality falls
+// below minAllowedTetQuality.  Use a large value to strongly avoid invalid or
+// near-invalid local decompositions.
+bestStateLowTetWeight 1000.0;
+
+// ************************************************************************* //

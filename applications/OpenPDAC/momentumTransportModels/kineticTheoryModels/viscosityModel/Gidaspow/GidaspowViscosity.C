@@ -1,0 +1,116 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenPDAC.
+    This file was derived from the multiphaseEuler solver in OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "GidaspowViscosity.H"
+#include "mathematicalConstants.H"
+#include "addToRunTimeSelectionTable.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+namespace kineticTheoryModels
+{
+namespace viscosityModels
+{
+defineTypeNameAndDebug(Gidaspow, 0);
+addToRunTimeSelectionTable(viscosityModel, Gidaspow, dictionary);
+}
+}
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::kineticTheoryModels::viscosityModels::Gidaspow::Gidaspow(
+    const dictionary& coeffDict)
+: viscosityModel(coeffDict),
+  alfa_("alfa", dimless, coeffDict.lookupOrDefault<scalar>("alfa", 1.6))
+{
+}
+
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::kineticTheoryModels::viscosityModels::Gidaspow::~Gidaspow() {}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+Foam::tmp<Foam::volScalarField>
+Foam::kineticTheoryModels::viscosityModels::Gidaspow::nu(
+    const volScalarField& alpha1,
+    const volScalarField& Theta,
+    const dimensionedScalar& ThetaSmall,
+    const volScalarField& g0,
+    const volScalarField& sumAlphaGs0,
+    const volScalarField& beta,
+    const volScalarField& rho1,
+    const volScalarField& da,
+    const dimensionedScalar& e) const
+{
+    const scalar sqrtPi = sqrt(constant::mathematical::pi);
+    const scalar Pi = constant::mathematical::pi;
+
+    const dimensionedScalar eta = 0.5 * (1.0 + e);
+
+    const volScalarField mu(5.0 / 96.0 * rho1 * da * sqrt(Theta) * sqrtPi);
+
+    /*
+    MFIX/Gidaspow kinetic-collisional viscosity convention:
+
+        mu_b ~ mu** * alpha_m * sum_l(alpha_l*g0_ml)
+
+    In MFIX the solid stress tensor is not multiplied by an additional
+    phase-volume fraction. Therefore the factor alpha_m belongs inside the
+    dynamic viscosity itself.
+
+    OpenPDAC convention used here:
+
+        divDevTau contains the explicit prefactor alpha_s*rho_s*nu_s.
+
+    Consequently, the viscosity returned by this model must be unweighted with
+    respect to the abundance of the current solid phase. The collision
+    environment remains concentration-dependent through sumAlphaGs0, but the
+    additional multiplicative factor alpha1 is removed to avoid applying the
+    same phase-volume-fraction weight twice.
+
+    The unused alpha1 argument is kept in the function signature for run-time
+    selection compatibility with the other viscosity models.
+    */
+    const volScalarField mu_b(256.0 / (5.0 * Pi) * mu * sumAlphaGs0);
+
+    const volScalarField mu_i(
+        (mu / (g0 * eta) * sqr(1 + 8 / 5 * eta * sumAlphaGs0)
+         + 3 / 5 * eta * mu_b));
+
+    return volScalarField::New(
+        IOobject::groupName(Foam::typedName<viscosityModel>("nu"),
+                            Theta.group()),
+        mu_i / rho1);
+}
+
+// ************************************************************************* //

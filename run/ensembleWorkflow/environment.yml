@@ -1,0 +1,32 @@
+# File di configurazione dell'ambiente Conda per il progetto di analisi
+# Per creare l'ambiente, esegui il comando:
+# > conda env create -f environment.yml
+# Per attivare l'ambiente, esegui:
+# > conda activate analysis-env
+
+name: analysis-env
+
+channels:
+  # Il canale conda-forge è raccomandato per avere versioni aggiornate 
+  # e una vasta disponibilità di pacchetti scientifici.
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Specifica una versione di Python per garantire la riproducibilità
+  - python=3.9
+
+  # Core libraries per l'analisi dei dati
+  - pandas
+  - numpy
+  - scipy
+
+  # Librerie per la visualizzazione
+  - matplotlib
+  - seaborn
+
+  # Libreria per la Sensitivity Analysis
+  - salib
+
+  # È buona norma includere pip nel caso servissero pacchetti non disponibili su Conda
+  - pip

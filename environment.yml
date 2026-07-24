@@ -1,0 +1,47 @@
+name: OpenPDACconda
+channels:
+  - defaults
+dependencies:
+  - python=3.11.11
+  - pip
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - pip:
+      - shapely
+      - numpy-stl
+      - scikit-image
+      - certifi
+      - cftime
+      - charset-normalizer
+      - contourpy
+      - cycler
+      - fonttools
+      - idna
+      - imageio
+      - imageio-ffmpeg
+      - joblib
+      - kiwisolver
+      - natsort
+      - netcdf4
+      - packaging
+      - pillow
+      - platformdirs
+      - pooch
+      - psutil
+      - pyparsing
+      - python-dateutil
+      - pytz
+      - pyvista
+      - requests
+      - scooby
+      - seaborn
+      - six
+      - threadpoolctl
+      - typing-extensions
+      - tzdata
+      - urllib3
+      - vtk
+      - xarray

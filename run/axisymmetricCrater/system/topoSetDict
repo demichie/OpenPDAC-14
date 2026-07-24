@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  10
+    \\  /    A nd           | Web:      www.OpenFOAM.org
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+actions
+(
+    {
+        name    extrusion_face;
+        type    faceSet;
+        action  new;
+        source  patchToFace;
+        patch   exposed_planes;
+    }
+    {
+        name    extrusion_face;
+        type    faceSet;
+        action  subset;
+
+	source  boxToFace;
+        // This box covers the entire domain in X and Z, 
+        // but is only 1 millimeter wide in Y (from -0.0005 to +0.0005).
+        // It will ONLY grab faces perfectly flat on the Y=0 axis.
+        box     (-1 -0.0001 -20) (4000 0.0001 2000); 
+
+	//	 source  normalToFace;
+         // Assuming your quadrant is in the -X, +Y quadrant (90 to 180 deg)
+         // This grabs the face sitting on the X-axis (pointing in the Y direction)
+	//  normal  (0 -1 0); 
+        // cos     0.99; // Tolerance
+    }
+);
+// ************************************************************************* //

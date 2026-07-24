@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build OpenPDAC (Debug)",
+            "type": "shell",
+            "command": "export WM_COMPILE_OPTION=Debug && ./Allwmake",
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build OpenPDAC (Opt)",
+            "type": "shell",
+            "command": "export WM_COMPILE_OPTION=Opt && ./Allwmake",
+            "problemMatcher": "$gcc",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Clean OpenPDAC (Allwclean)",
+            "type": "shell",
+            "command": "./Allwclean",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "name": "OpenPDAC",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/phaseSystem/lnInclude",
+                "${env:WM_PROJECT_DIR}/applications/modules/fluidSolver/lnInclude",
+                "${env:FOAM_SRC}/OpenFOAM/lnInclude",
+                "${env:FOAM_SRC}/finiteVolume/lnInclude",
+                "${env:FOAM_SRC}/meshTools/lnInclude",
+                "${env:FOAM_SRC}/lagrangian/basic/lnInclude",
+                "${env:FOAM_SRC}/lagrangian/parcel/lnInclude",
+                "${env:FOAM_SRC}/physicalProperties/lnInclude",
+                "${env:FOAM_SRC}/thermophysicalModels/basic/lnInclude",
+                "${env:FOAM_SRC}/twoPhaseModels/twoPhaseMixture/lnInclude",
+                "${env:FOAM_SRC}/twoPhaseModels/compressibleTwoPhases/lnInclude",
+                "${env:FOAM_SRC}/MomentumTransportModels/momentumTransportModels/lnInclude",
+                "${env:FOAM_SRC}/MomentumTransportModels/compressible/lnInclude",
+                "${env:FOAM_SRC}/MomentumTransportModels/phaseCompressible/lnInclude",
+                "${env:FOAM_SRC}/sampling/lnInclude",
+                "${env:FOAM_SRC}/OSspecific/POSIX/lnInclude"
+            ],
+            "defines": [
+                "WM_DP",
+                "WM_LABEL_SIZE=32",
+                "NoRepository"
+            ],
+            "compilerPath": "/usr/bin/g++", // <--- DEVE ESSERE g++
+            "cStandard": "c11",
+            "cppStandard": "c++17", // <--- Assicurati che sia questo
+            "intelliSenseMode": "linux-gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "${env:FOAM_SRC}",
+                    "${env:WM_PROJECT_DIR}/applications/modules"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}
