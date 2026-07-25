@@ -24,7 +24,8 @@ Six test cases are provided:
 - a 3d flow over a topography with AMR
 
 This version is based on the Ubuntu package:
-openfoam13_20260212_amd64.deb
+
+openfoam14_20260724_amd64.deb
 
 This code is not approved not endorsed by the OpenFOAM Foundation or
 by ESI Ltd, the owner of OpenFOAM.
