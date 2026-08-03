@@ -170,12 +170,12 @@ refinementRegions
 crater
 {
 mode inside;
-levels ((1E15 6));
+level 6;
 }
 conduit
 {
 mode inside;
-levels ((1E15 6));
+level 6;
 }
 }
 
