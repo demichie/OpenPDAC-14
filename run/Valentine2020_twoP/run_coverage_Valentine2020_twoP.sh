@@ -13,7 +13,7 @@ set -e
 #   - Perform the standard initialization run using the .init dictionaries.
 #   - Capture coverage after the initialization run.
 #   - Reset counters.
-#   - Perform two short main runs using the same controlDict.run and two
+#   - Perform two short main runs using the same controlDict.coverage and two
 #     different fvSolution dictionaries.
 #   - Capture coverage separately after each short main run.
 #   - Merge initialization and main-run tracefiles and generate an HTML report.
@@ -128,7 +128,7 @@ lcov --zerocounters --directory "$COVERAGE_DIR"
 print_coverage_debug "after zeroing counters"
 
 echo "==> Preparing main-run fields"
-cp ./system/controlDict.run ./system/controlDict
+cp ./system/controlDict.coverage ./system/controlDict
 
 echo "==> Setting fields for the main runs"
 for field in alpha.air T.air U.air; do
@@ -159,7 +159,7 @@ lcov --zerocounters --directory "$COVERAGE_DIR"
 print_coverage_debug "after zeroing counters before second short main run"
 
 echo "==> Preparing second short main run with fvSolution.runCoverage2"
-cp ./system/controlDict.run ./system/controlDict
+cp ./system/controlDict.coverage ./system/controlDict
 cp ./system/fvSolution.runCoverage2 ./system/fvSolution
 
 echo "==> Running second short main simulation with $(getApplication)"
