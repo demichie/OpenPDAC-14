@@ -159,7 +159,6 @@ lcov --zerocounters --directory "$COVERAGE_DIR"
 print_coverage_debug "after zeroing counters before second short main run"
 
 echo "==> Preparing second short main run with fvSolution.runCoverage2"
-cp ./system/controlDict.coverage ./system/controlDict
 cp ./system/fvSolution.runCoverage2 ./system/fvSolution
 
 echo "==> Running second short main simulation with $(getApplication)"
