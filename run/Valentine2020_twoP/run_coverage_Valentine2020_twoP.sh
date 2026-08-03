@@ -2,7 +2,7 @@
 set -e
 
 # =============================================================================
-# Coverage workflow for OpenPDAC-13/run/Valentine2020_twoP
+# Coverage workflow for OpenPDAC-14/run/Valentine2020_twoP
 # -----------------------------------------------------------------------------
 # Purpose
 #   This script runs a lightweight line-coverage workflow for the
@@ -13,10 +13,10 @@ set -e
 #   - Perform the standard initialization run using the .init dictionaries.
 #   - Capture coverage after the initialization run.
 #   - Reset counters.
-#   - Perform a short main run using controlDict.coverage instead of
-#     controlDict.run.
-#   - Capture coverage after the short run.
-#   - Merge the two coverage tracefiles and generate an HTML report.
+#   - Perform two short main runs using the same controlDict.run and two
+#     different fvSolution dictionaries.
+#   - Capture coverage separately after each short main run.
+#   - Merge initialization and main-run tracefiles and generate an HTML report.
 #
 # Notes
 #   - This script intentionally skips any extra post-processing.
@@ -122,16 +122,15 @@ require_gcda_files "initialization run"
 echo "==> Capturing coverage after initialization run"
 lcov --capture --directory "$COVERAGE_DIR" --output-file "$COVERAGE_ROOT/coverage_init.info"
 
-echo "==> Zeroing counters before short main run"
+echo "==> Zeroing counters before first short main run"
 lcov --zerocounters --directory "$COVERAGE_DIR"
 
 print_coverage_debug "after zeroing counters"
 
-echo "==> Preparing short main run"
-cp ./system/controlDict.coverage ./system/controlDict
-cp ./system/fvSolution.run ./system/fvSolution
+echo "==> Preparing main-run fields"
+cp ./system/controlDict.run ./system/controlDict
 
-echo "==> Setting fields for the '.coverage' run"
+echo "==> Setting fields for the main runs"
 for field in alpha.air T.air U.air; do
     mv "0/${field}.run" "0/${field}"
 done
@@ -141,20 +140,44 @@ for particle in particles1 particles2; do
     done
 done
 
-echo "==> Running short main simulation with $(getApplication)"
+echo "==> Preparing first short main run with fvSolution.Run"
+cp ./system/fvSolution.Run ./system/fvSolution
+
+echo "==> Running first short main simulation with $(getApplication)"
 runApplication $(getApplication)
+mv log.foamRun log.foamRun.coverage1
 
-print_coverage_debug "after short main run"
-require_gcda_files "short main run"
+print_coverage_debug "after first short main run"
+require_gcda_files "first short main run"
 
-echo "==> Capturing coverage after short main run"
-lcov --capture --directory "$COVERAGE_DIR" --output-file "$COVERAGE_ROOT/coverage_sim.info"
+echo "==> Capturing coverage after first short main run"
+lcov --capture --directory "$COVERAGE_DIR" --output-file "$COVERAGE_ROOT/coverage_sim1.info"
+
+echo "==> Zeroing counters before second short main run"
+lcov --zerocounters --directory "$COVERAGE_DIR"
+
+print_coverage_debug "after zeroing counters before second short main run"
+
+echo "==> Preparing second short main run with fvSolution.runCoverage2"
+cp ./system/controlDict.run ./system/controlDict
+cp ./system/fvSolution.runCoverage2 ./system/fvSolution
+
+echo "==> Running second short main simulation with $(getApplication)"
+runApplication $(getApplication)
+mv log.foamRun log.foamRun.coverage2
+
+print_coverage_debug "after second short main run"
+require_gcda_files "second short main run"
+
+echo "==> Capturing coverage after second short main run"
+lcov --capture --directory "$COVERAGE_DIR" --output-file "$COVERAGE_ROOT/coverage_sim2.info"
 
 echo "==> Merging tracefiles"
 lcov \
   -a "$COVERAGE_ROOT/coverage_base.info" \
   -a "$COVERAGE_ROOT/coverage_init.info" \
-  -a "$COVERAGE_ROOT/coverage_sim.info" \
+  -a "$COVERAGE_ROOT/coverage_sim1.info" \
+  -a "$COVERAGE_ROOT/coverage_sim2.info" \
   -o "$COVERAGE_ROOT/coverage_total.info"
 
 echo "==> Filtering external/OpenFOAM files"
