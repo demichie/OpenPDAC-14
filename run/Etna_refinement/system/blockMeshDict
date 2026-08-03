@@ -267,7 +267,10 @@ code #
         label v6 = startIdx + 6; label v7 = startIdx + 7;
 
         // 5. Write Block
-        os << "    hex (" 
+        // OpenFOAM 14 supports run-time selectable block types.  Use the
+        // explicit named-block syntax and make the name a word (layer1,
+        // layer2, ...), rather than writing the numeric layer label alone.
+        os << "    name layer" << layer << " hex ("
            << v0 << " " << v1 << " " << v2 << " " << v3 << " "
            << v4 << " " << v5 << " " << v6 << " " << v7 
            << ") (" << nx << " " << ny << " " << nz << ") "
