@@ -141,7 +141,7 @@ for particle in particles1 particles2; do
 done
 
 echo "==> Preparing first short main run with fvSolution.Run"
-cp ./system/fvSolution.Run ./system/fvSolution
+cp ./system/fvSolution.run ./system/fvSolution
 
 echo "==> Running first short main simulation with $(getApplication)"
 runApplication $(getApplication)
