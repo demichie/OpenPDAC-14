@@ -20,6 +20,8 @@ codeInclude
 #{
 #include "scalarList.H"
 #include "labelList.H"
+#include <fstream>
+#include <sstream>
 #};
 
 code
@@ -262,11 +264,18 @@ code
     const scalar yNeg = atm_y_neg;
     const scalar yPos = atm_y_pos;
 
+    // OpenFOAM 14 cannot reliably construct the compound boundary entry when
+    // a top-level codeStream returns it through an ITstream.  Generate the
+    // same dictionary as a normal ASCII include file instead.
+    std::ostringstream generated;
+#define os generated
+
     os << "vertices" << nl << "(" << nl;
     label vertexCount = 0;
-    auto addVertex = [&](scalar x, scalar y, scalar z, const string& comment) -> label
+    auto addVertex = [&](scalar x, scalar y, scalar z, const string&) -> label
     {
-        os << "(" << x << " " << y << " " << z << ") // " << vertexCount << " " << comment << nl;
+        // Do not emit end-of-line comments into the codeStream output.
+        os << "    (" << x << " " << y << " " << z << ")" << nl;
         vertexCount++; return vertexCount - 1;
     };
     auto makeLevel = [&](const List<scalar>& xs, scalar z, const string& prefix) -> List<label>
@@ -344,9 +353,15 @@ code
 
     os << ");" << nl << nl << "blocks" << nl << "(" << nl;
 
-    auto hexLine = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, label nx, label ny, label nz, const string& grading, const string& comment)
+    auto hexLine = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, label nx, label ny, label nz, const string& grading, const string&)
     {
-        os << "    hex (" << id(bot,i0,0) << " " << id(bot,i1,0) << " " << id(bot,i1,1) << " " << id(bot,i0,1) << " " << id(top,j0,0) << " " << id(top,j1,0) << " " << id(top,j1,1) << " " << id(top,j0,1) << ") (" << nx << " " << ny << " " << nz << ") " << grading.c_str() << " // " << comment << nl;
+        os << "    hex ("
+           << id(bot,i0,0) << " " << id(bot,i1,0) << " "
+           << id(bot,i1,1) << " " << id(bot,i0,1) << " "
+           << id(top,j0,0) << " " << id(top,j1,0) << " "
+           << id(top,j1,1) << " " << id(top,j0,1) << ") ("
+           << nx << " " << ny << " " << nz << ") "
+           << grading.c_str() << nl;
     };
 
     const label nx_inner = halfMode ? 2*n_crater : 4*n_crater;
@@ -387,10 +402,10 @@ code
     }
 
     os << ");" << nl << nl << "edges" << nl << "(" << nl << ");" << nl << nl << "boundary" << nl << "(" << nl;
-    auto faceYNeg = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string& comment) { os << "            (" << id(bot,i0,0) << " " << id(bot,i1,0) << " " << id(top,j1,0) << " " << id(top,j0,0) << ") // " << comment << nl; };
-    auto faceYPos = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string& comment) { os << "            (" << id(bot,i0,1) << " " << id(top,j0,1) << " " << id(top,j1,1) << " " << id(bot,i1,1) << ") // " << comment << nl; };
-    auto faceZ = [&](const List<label>& lev, label i0, label i1, const string& comment) { os << "            (" << id(lev,i0,0) << " " << id(lev,i1,0) << " " << id(lev,i1,1) << " " << id(lev,i0,1) << ") // " << comment << nl; };
-    auto faceX = [&](const List<label>& bot, label ix, const List<label>& top, label jx, const string& comment) { os << "            (" << id(bot,ix,0) << " " << id(bot,ix,1) << " " << id(top,jx,1) << " " << id(top,jx,0) << ") // " << comment << nl; };
+    auto faceYNeg = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string&) { os << "            (" << id(bot,i0,0) << " " << id(bot,i1,0) << " " << id(top,j1,0) << " " << id(top,j0,0) << ")" << nl; };
+    auto faceYPos = [&](const List<label>& bot, label i0, label i1, const List<label>& top, label j0, label j1, const string&) { os << "            (" << id(bot,i0,1) << " " << id(top,j0,1) << " " << id(top,j1,1) << " " << id(bot,i1,1) << ")" << nl; };
+    auto faceZ = [&](const List<label>& lev, label i0, label i1, const string&) { os << "            (" << id(lev,i0,0) << " " << id(lev,i1,0) << " " << id(lev,i1,1) << " " << id(lev,i0,1) << ")" << nl; };
+    auto faceX = [&](const List<label>& bot, label ix, const List<label>& top, label jx, const string&) { os << "            (" << id(bot,ix,0) << " " << id(bot,ix,1) << " " << id(top,jx,1) << " " << id(top,jx,0) << ")" << nl; };
 
     os << "    front" << nl << "    {" << nl << "        type patch;" << nl << "        faces" << nl << "        (" << nl; // <--- Changed from empty to patch
     if (h_conduit > 0) faceYNeg(V_condBase, 0, 1, V_crBase, 0, 1, "conduit front y-");
@@ -438,5 +453,23 @@ code
     os << ");" << nl << nl << "mergePatchPairs" << nl << "(" << nl;
     for (label layer = 1; layer < n_vert_layers; ++layer) os << "    (top_outer_layer" << layer << " bottom_outer_layer" << layer+1 << ")" << nl;
     os << ");" << nl;
+
+#undef os
+
+    const char* generatedPath = "system/blockMeshDict.generated";
+    std::ofstream generatedFile(generatedPath);
+    if (!generatedFile.good())
+    {
+        FatalErrorInFunction
+            << "Cannot open " << generatedPath << " for writing"
+            << exit(FatalError);
+    }
+    generatedFile << generated.str();
+    generatedFile.close();
+
+    Info<< "codeStream: wrote generated mesh dictionary to "
+        << generatedPath << endl;
 #};
 };
+
+#include "blockMeshDict.generated"

@@ -30,7 +30,7 @@ cp ./constant/cloudProperties.run ./constant/cloudProperties
 
 echo "--> Starting the main simulation in parallel with $(getApplication)..."
 # This command will block until the simulation is finished.
-runParallel $(getApplication)
+runApplication $(getApplication)
 
 # -----------------------------------------------------------------------------
 echo

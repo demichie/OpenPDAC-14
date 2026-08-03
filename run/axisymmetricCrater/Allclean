@@ -21,5 +21,6 @@ rm -rf 0
 # Remove dictionaries that were copied by the Allrun script
 rm -f system/controlDict
 rm -f system/fvSolution
+rm -f system/blockMeshDict.generated
 
 echo "Clean-up complete."
