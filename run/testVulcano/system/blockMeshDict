@@ -21,6 +21,8 @@ FoamFile
 codeInclude
 #{
 #include "scalarList.H"
+#include <fstream>
+#include <sstream>
 #};
 
     code #
@@ -534,6 +536,18 @@ codeInclude
 
     // Compute the grading and vertical number of cells in first layer
     scalar dz_atm_min = dz_top_crater;
+    // Build the generated dictionary in a standard text stream.  OpenFOAM 14
+    // otherwise tokenises strings written directly to the codeStream output;
+    // formatted comment lines beginning with spaces then fail as words.
+    std::ostringstream generated;
+    #define os generated
+    // Foam::endl/Foam::nl are not std::ostream manipulators.  When sent to
+    // std::ostringstream they are converted to the integer 1, producing a
+    // single invalid line such as "...;1vertices1(".  Use real ASCII line
+    // endings while assembling the generated include file.
+    #define endl '\n'
+    #define nl '\n'
+
     os << "dz_atm_min " << dz_atm_min << ";" << endl;
     Info << "dz_atm_min " << dz_atm_min << ";" << endl;
 
@@ -2441,7 +2455,27 @@ addVertex(vector(icylExt_xp, $atm_y_pos, z_level),
 
     os << ");" << endl; // End mergePatchPairs section
 
+    #undef nl
+    #undef endl
+    #undef os
+
+    const char* generatedPath = "system/blockMeshDict.generated";
+    std::ofstream generatedFile(generatedPath);
+    if (!generatedFile.good())
+    {
+        FatalErrorInFunction
+            << "Cannot open " << generatedPath << " for writing"
+            << exit(FatalError);
+    }
+    generatedFile << generated.str();
+    generatedFile.close();
+
+    Info<< "codeStream: wrote generated mesh dictionary to "
+        << generatedPath << endl;
+
 #}; // End code calculation
 }; // End codeStream
+
+#include "blockMeshDict.generated"
 
 // ************************************************************************* //

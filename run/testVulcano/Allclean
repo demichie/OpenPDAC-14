@@ -17,5 +17,6 @@ rm constant/DEM/modified_points.png
 rm -f system/controlDict
 rm -f system/fvSolution
 rm -f constant/cloudProperties
+rm -f system/blockMeshDict.generated
 
 echo "Clean-up complete."
