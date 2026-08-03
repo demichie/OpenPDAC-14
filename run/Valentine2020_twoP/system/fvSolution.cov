@@ -151,6 +151,7 @@ PIMPLE
     }  
     
     faceMomentum        no;
+    dragCorrection yes;
     hydrostaticInitialisation false;
     nHydrostaticCorrectors 20;
 }
