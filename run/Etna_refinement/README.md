@@ -88,7 +88,7 @@ The default run settings are:
 
 The case requires:
 
-- OpenFOAM 13 with a compatible OpenPDAC installation;
+- OpenFOAM 14 with a compatible OpenPDAC installation;
 - the OpenFOAM utilities `blockMesh`, `decomposePar`, `checkMesh`, `createZones`, and `topoGrid`;
 - a valid `system/decomposeParDict` for the desired number of MPI processes;
 - the DEM and the terrain-processing dictionaries referenced by the case;
