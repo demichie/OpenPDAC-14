@@ -11,6 +11,7 @@ OpenPDAC includes:
 * a modified kinetic-theory formulation for granular flows involving multiple dispersed solid phases;
 * Eulerian modelling of the gas and solid phases;
 * a Lagrangian particle-tracking library with one-way coupling to the Eulerian gas–solid mixture;
+* adaptive mesh refinement (AMR), including dynamic load balancing for parallel simulations;
 * initialization of hydrostatic atmospheric pressure profiles for simulations over large vertical domains;
 * boundary-condition support suitable for atmospheric inflow and outflow;
 * test cases covering different flow regimes, geometries, and numerical configurations.
