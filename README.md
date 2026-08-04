@@ -1,31 +1,43 @@
 # OpenPDAC-14
 
-OpenPDAC is an OpenFOAM module based on the module multiphaseEuler,
-distributed with OpenFOAM.
+OpenPDAC is an OpenFOAM-based solver for the simulation of multiphase gas–particle flows, with particular emphasis on volcanic and geophysical applications.
 
-With respect to the origianl module, in OpenPDAC the equations from
-the kinetic theory for granular flows are modified to model multiple
-dispersed solid phases.
+The code is derived from the `multiphaseEuler` module distributed with OpenFOAM and extends its formulation to represent multiple dispersed solid phases.
 
-In addition, a lagrangian library is included in the model (one-way
-coupling with the gas-solid mixture).
+## Main features
 
-The module also implement an initialization of the hydrostatic pressure
-profile, which is needed for simulations on large domains. This allows
-you to use boundary conditions which are appropriate for inflow/outflow.
+OpenPDAC includes:
 
-Six test cases are provided:
+* a modified kinetic-theory formulation for granular flows involving multiple dispersed solid phases;
+* Eulerian modelling of the gas and solid phases;
+* a Lagrangian particle-tracking library with one-way coupling to the Eulerian gas–solid mixture;
+* initialization of hydrostatic atmospheric pressure profiles for simulations over large vertical domains;
+* boundary-condition support suitable for atmospheric inflow and outflow;
+* test cases covering different flow regimes, geometries, and numerical configurations.
 
-- a 3D explosion simulation;
-- a 2D explosion simulation on a flat topography;
-- a 2D dilute flow over a wavy surface;
-- a 2D fluidezed bed with two solid phases;
-- a 2D impinging flow with two solid phases.
-- a 3d flow over a topography with AMR
+## Test cases
 
-This version is based on the Ubuntu package:
+The repository provides six test cases:
 
+1. a three-dimensional explosion;
+2. a two-dimensional explosion over flat terrain;
+3. a two-dimensional dilute flow over a wavy surface;
+4. a two-dimensional fluidized bed with two solid phases;
+5. a two-dimensional impinging flow with two solid phases;
+6. a three-dimensional flow over realistic topography using adaptive mesh refinement (AMR).
+
+These cases are intended both as examples of the available modelling capabilities and as starting points for setting up new simulations.
+
+## OpenFOAM compatibility
+
+This version of OpenPDAC is developed for OpenFOAM 14 and has been tested with the following Ubuntu package:
+
+```text
 openfoam14_20260724_amd64.deb
+```
 
-This code is not approved not endorsed by the OpenFOAM Foundation or
-by ESI Ltd, the owner of OpenFOAM.
+Compatibility with other OpenFOAM versions or package releases is not guaranteed.
+
+## Disclaimer
+
+OpenPDAC is an independent development based on OpenFOAM. It is not approved or endorsed by the OpenFOAM Foundation or by ESI Group.
