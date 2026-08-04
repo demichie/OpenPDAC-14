@@ -1,40 +1,72 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
-cff-version: 0.9.0
-title: OpenPDAC-14
+cff-version: 1.2.0
 message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+  If you use this software, please cite it using the metadata from this file.
+title: OpenPDAC-14
 type: software
+
 authors:
   - given-names: Mattia
-    family-names: de' Michieli Vitturi
+    name-particle: de'
+    family-names: Michieli Vitturi
     email: mattia.demichielivitturi@ingv.it
-    name-particle: Mattia de'
     affiliation: >-
-      Istituto Nazionale di Geofisica e Vulcanologia,
+      Istituto Nazionale di Geofisica e Vulcanologia (INGV),
       Sezione di Pisa
-    orcid: 'https://orcid.org/0000-0002-6750-9245'
-repository-code: 'https://github.com/demichie/OpenPDAC-14/'
-url: 'https://github.com/demichie/OpenPDAC-14/'
-doi: 'https://doi.org/10.5281/zenodo.17054991'
-abstract: >
-  OpenPDAC is an OpenFOAM module based on the module
-  multiphaseEuler, distributed with OpenFOAM.
+    orcid: https://orcid.org/0000-0002-6750-9245
 
+  - given-names: Tomaso
+    family-names: Esposti Ongaro
+    affiliation: >-
+      Istituto Nazionale di Geofisica e Vulcanologia (INGV),
+      Sezione di Pisa
 
-  With respect to the original module, in OpenPDAC the
-  equations from the kinetic theory for granular flows are
-  modified to model multiple dispersed solid phases.
+  - given-names: Federica
+    family-names: Pardini
+    affiliation: >-
+      Istituto Nazionale di Geofisica e Vulcanologia (INGV),
+      Sezione di Pisa
 
+  - given-names: Federico
+    family-names: Brogi
+    affiliation: >-
+      CINECA, Direzione HPC Supercalcolo, Sede di Bologna
 
-  In addition, a Lagrangian library is included in the model
-  (one-way coupling with the gas-solid mixture).
-keywords:
-  - volcanic flows
-  - multiphase flows
-  - OpenFOAM
-license: GPL-3.0
+  - given-names: Brandon
+    family-names: Keim
+    affiliation: >-
+      University at Buffalo, Department of Geology, Buffalo
+
+  - name: OpenPDAC Team
+    email: openpdac@ingv.it
+    website: https://github.com/demichie/OpenPDAC-14
+
+abstract: >-
+  OpenPDAC is an OpenFOAM-based solver for compressible multiphase
+  gas-particle flows, with particular emphasis on pyroclastic density
+  currents, volcanic explosions, and related geophysical flows. It extends
+  the multiphaseEuler formulation distributed with OpenFOAM to represent
+  multiple dispersed solid phases using a modified kinetic theory for
+  granular flows. OpenPDAC also includes an adapted Lagrangian particle
+  library with one-way coupling to the Eulerian gas-solid mixture, adaptive
+  mesh refinement, dynamic load balancing for parallel simulations, and the
+  topoGrid utility for generating terrain-following meshes from topographic
+  data.
+
 version: '14'
 date-released: '2026-08-04'
+
+doi: 10.5281/zenodo.17054991
+repository-code: https://github.com/demichie/OpenPDAC-14
+url: https://demichie.github.io/OpenPDAC-14/
+
+keywords:
+  - volcanic flows
+  - pyroclastic density currents
+  - multiphase flows
+  - gas-particle flows
+  - granular flows
+  - computational fluid dynamics
+  - adaptive mesh refinement
+  - OpenFOAM
+
+license: GPL-3.0-or-later
