@@ -313,7 +313,24 @@ OpenPDAC is developed by:
 
 **Mattia de' Michieli Vitturi**  
 Istituto Nazionale di Geofisica e Vulcanologia (INGV), Sezione di Pisa  
-[mattia.demichielivitturi@ingv.it](mailto:mattia.demichielivitturi@ingv.it)
+
+**Tomaso Esposti Ongaro**  
+Istituto Nazionale di Geofisica e Vulcanologia (INGV), Sezione di Pisa  
+
+**Federica Pardini**
+Istituto Nazionale di Geofisica e Vulcanologia (INGV), Sezione di Pisa  
+
+**Federico Brogi**
+CINECA, Direzione HPC Supercalcolo, Sede di Bologna 
+
+**Brandon Keim**
+University at Buffalo, Department of Geology, Buffalo
+
+**OpenPDAC Team**  
+Istituto Nazionale di Geofisica e Vulcanologia (INGV), Sezione di Pisa  
+[openpdac@ingv.it](mailto:openpdac@ingv.it)
+
+
 
 Bug reports and reproducible examples can be submitted through the repository's
 [GitHub issue tracker](https://github.com/demichie/OpenPDAC-14/issues).
