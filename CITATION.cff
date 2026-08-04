@@ -54,7 +54,7 @@ abstract: >-
 version: '14'
 date-released: '2026-08-04'
 
-doi: 10.5281/zenodo.17054991
+doi: 10.5281/zenodo.21793252
 repository-code: https://github.com/demichie/OpenPDAC-14
 url: https://demichie.github.io/OpenPDAC-14/
 
