@@ -6,8 +6,7 @@ type: software
 
 authors:
   - given-names: Mattia
-    name-particle: de'
-    family-names: Michieli Vitturi
+    family-names: de' Michieli Vitturi
     email: mattia.demichielivitturi@ingv.it
     affiliation: >-
       Istituto Nazionale di Geofisica e Vulcanologia (INGV),
