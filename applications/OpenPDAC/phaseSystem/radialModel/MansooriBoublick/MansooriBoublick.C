@@ -82,12 +82,17 @@ Foam::PtrList<Foam::volScalarField> Foam::radialModels::MansooriBoublick::g0(
         }
     }
 
+    // Follow the same dense-regime regularisation used by Sinclair-Jackson:
+    // cap only the singular packing contribution at alphaMinFriction, while
+    // retaining the actual mixture moment eta2.  This keeps the RDF finite
+    // when a transient alpha overshoot crosses alphasMax.
+    const dimensionedScalar smallAlpha("smallAlpha", dimless, ROOTVSMALL);
+    const dimensionedScalar smallDenom("smallDenom", dimless, SMALL);
+
+    const volScalarField alphasRdf(min(alphas, alphaMinFriction));
+
     const volScalarField denominatorTerm(
-        max(1.0
-                - alphas
-                      / max(alphasMax,
-                            dimensionedScalar("small", dimless, ROOTVSMALL)),
-            dimensionedScalar("small", dimless, ROOTVSMALL)));
+        max(1.0 - alphasRdf / max(alphasMax, smallAlpha), smallDenom));
 
     forAll(g0_im, iter)
     {
@@ -142,23 +147,31 @@ Foam::radialModels::MansooriBoublick::g0prime(
         }
     }
 
-    // D = 1 - alpha_s/alpha_s,max, with the same lower clamp used in g0()
-    volScalarField denominatorTerm(
-        max(scalar(1) - alphas / max(alphasMax, scalar(ROOTVSMALL)),
-            scalar(ROOTVSMALL)));
+    // Use the same dense-regime regularisation as in g0() and in the
+    // Sinclair-Jackson implementation: the singular packing variable is
+    // evaluated with min(alpha_s, alphaMinFriction).  The actual eta2 is not
+    // capped, so the polydisperse contribution continues to respond to alpha.
+    const dimensionedScalar smallAlpha("smallAlpha", dimless, ROOTVSMALL);
+    const dimensionedScalar smallDenom("smallDenom", dimless, SMALL);
 
-    // Active branch of the denominator clamp.
-    // If the clamp is active, D is frozen and dD/dalpha_i must be zero.
-    volScalarField activeDenom(
-        pos((scalar(1) - alphas / max(alphasMax, scalar(ROOTVSMALL)))
-            - scalar(ROOTVSMALL)));
+    const volScalarField alphasRdf(min(alphas, alphaMinFriction));
+
+    // D = 1 - min(alpha_s, alphaMinFriction)/alpha_s,max.
+    volScalarField denominatorTerm(
+        max(scalar(1) - alphasRdf / max(alphasMax, smallAlpha), smallDenom));
+
+    // Derivative of the active branch of min(alpha_s, alphaMinFriction).
+    // As in Sinclair-Jackson, the derivative of the capped packing part is
+    // zero for alpha_s >= alphaMinFriction.
+    volScalarField activeDenom(pos(alphaMinFriction - alphas));
 
     // Exact derivative of eta2 with respect to alpha_i:
-    // d(eta2)/d(alpha_i) = 1/d_i
+    // d(eta2)/d(alpha_i) = 1/d_i.  This remains active above
+    // alphaMinFriction because eta2 itself is not capped.
     volScalarField dEta2dAlphai(scalar(1) / phasei.d());
 
-    // dD/dalpha_i = -1/alpha_s,max, switched off when the clamp is active
-    volScalarField dDdAlphai(-activeDenom / max(alphasMax, scalar(ROOTVSMALL)));
+    // dD/dalpha_i = -1/alpha_s,max below alphaMinFriction, zero above it.
+    volScalarField dDdAlphai(-activeDenom / max(alphasMax, smallAlpha));
 
     forAll(g0prime_im, iter)
     {
